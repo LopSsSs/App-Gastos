@@ -1,5 +1,7 @@
 # App Gastos
 
+Desplegado en Vercel: https://app-gastos.vercel.app
+
 PWA (Progressive Web App) para el control de gastos domésticos, con gráfica interactiva, categorías personalizables, sincronización opcional en la nube (Supabase) y consejo mensual de ahorro con IA (Gemini).
 
 El código de la aplicación está en [`mi-casa-gastos-2/gastos-casa`](mi-casa-gastos-2/gastos-casa).
