@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#100E1B">
+<title>Hogar · Gastos</title>
+<meta name="description" content="Control premium de gastos del hogar con gráfica interactiva, nube y consejo mensual con IA.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#100E1B;
+  --bg2:#161327;
+  --surface:#1C1930;
+  --surface-hi:#241F3D;
+  --line:rgba(232,207,160,.10);
+  --gold:#E8CFA0;
+  --gold-deep:#C9A85C;
+  --ink:#F2EFEA;
+  --ink-dim:#9B93B0;
+  --danger:#E07B6A;
+  --ok:#8BC7A0;
+  --shadow-out: -6px -6px 14px rgba(255,255,255,.035), 8px 10px 22px rgba(0,0,0,.55);
+  --shadow-in: inset -4px -4px 10px rgba(255,255,255,.03), inset 5px 6px 14px rgba(0,0,0,.5);
+  --radius:20px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:'Outfit',sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  overflow-x:hidden;
+  padding-bottom:40px;
+}
+
+/* ============ FONDO ANIMADO (visible) ============ */
+.fx{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  background:
+    radial-gradient(60% 45% at 15% 0%, rgba(74,58,140,.55), transparent 70%),
+    radial-gradient(55% 45% at 90% 100%, rgba(140,109,40,.45), transparent 70%),
+    radial-gradient(120% 90% at 50% 0%, #171331 0%, var(--bg) 62%);
+}
+/* Orbes que se mueven (sin blur, con degradado suave propio) */
+.fx .orb{
+  position:absolute;border-radius:50%;
+  animation:orbita 22s ease-in-out infinite alternate;
+  will-change:transform;
+}
+.fx .orb.o1{width:70vmax;height:70vmax;top:-30vmax;left:-25vmax;
+  background:radial-gradient(circle, rgba(96,74,180,.50) 0%, rgba(96,74,180,.18) 40%, transparent 68%)}
+.fx .orb.o2{width:62vmax;height:62vmax;bottom:-26vmax;right:-22vmax;animation-duration:28s;animation-delay:-9s;
+  background:radial-gradient(circle, rgba(201,168,92,.42) 0%, rgba(201,168,92,.14) 40%, transparent 68%)}
+.fx .orb.o3{width:46vmax;height:46vmax;top:32%;left:45%;animation-duration:34s;animation-delay:-16s;
+  background:radial-gradient(circle, rgba(52,110,160,.40) 0%, rgba(52,110,160,.12) 40%, transparent 68%)}
+@keyframes orbita{
+  0%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(-6vmax,7vmax) scale(1.10)}
+  100%{transform:translate(10vmax,-8vmax) scale(1.22)}
+}
+/* Partículas doradas que suben lentamente */
+.fx .p{
+  position:absolute;bottom:-3vh;border-radius:50%;
+  background:radial-gradient(circle, rgba(240,218,170,1), rgba(232,207,160,0) 70%);
+  box-shadow:0 0 10px 2px rgba(232,207,160,.55);
+  animation:subir linear infinite;
+  will-change:transform,opacity;
+}
+@keyframes subir{
+  0%{transform:translateY(0) translateX(0);opacity:0}
+  8%{opacity:.95}
+  92%{opacity:.7}
+  100%{transform:translateY(-108vh) translateX(6vw);opacity:0}
+}
+/* Partículas moradas que caen desde arriba a la izquierda */
+.fx .pm{
+  position:absolute;top:-3vh;border-radius:50%;
+  background:radial-gradient(circle, rgba(190,160,255,1), rgba(150,110,230,0) 70%);
+  box-shadow:0 0 10px 2px rgba(160,120,235,.55);
+  animation:caer linear infinite;
+  will-change:transform,opacity;
+}
+@keyframes caer{
+  0%{transform:translateY(0) translateX(0);opacity:0}
+  8%{opacity:.95}
+  92%{opacity:.7}
+  100%{transform:translateY(108vh) translateX(8vw);opacity:0}
+}
+@media (prefers-reduced-motion:reduce){
+  .fx .orb,.fx .p,.fx .pm{animation:none}
+  .fx .p,.fx .pm{display:none}
+  *{transition:none!important}
+}
+header,section{position:relative;z-index:1}
+
+/* ============ Cabecera ============ */
+header{padding:26px 22px 6px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.brand h1{font-family:'Fraunces',serif;font-weight:600;font-size:26px;letter-spacing:.2px;display:flex;align-items:center;gap:10px}
+.brand small{color:var(--ink-dim);font-size:13px;letter-spacing:.4px;text-transform:uppercase}
+.cloud-dot{width:9px;height:9px;border-radius:50%;background:var(--ink-dim);display:inline-block;transition:background .3s}
+.cloud-dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.cloud-dot.err{background:var(--danger);box-shadow:0 0 8px var(--danger)}
+.month-nav{display:flex;align-items:center;gap:8px}
+.month-nav button{width:38px;height:38px;font-size:16px}
+.month-label{min-width:104px;text-align:center;font-weight:600;color:var(--gold);font-size:14px;letter-spacing:.5px;text-transform:capitalize}
+
+/* ============ Botones con relieve ============ */
+.btn{
+  border:none;cursor:pointer;color:var(--ink);
+  background:linear-gradient(145deg,var(--surface-hi),var(--surface));
+  border:1px solid var(--line);
+  border-radius:16px;
+  box-shadow:var(--shadow-out);
+  transition:transform .12s ease, box-shadow .15s ease;
+  font-family:inherit;font-weight:600;
+}
+.btn:active{transform:translateY(1px) scale(.985);box-shadow:var(--shadow-in)}
+.btn-gold{
+  background:linear-gradient(150deg,#F3DFB4,var(--gold-deep));
+  color:#241C08;border:1px solid rgba(255,255,255,.35);
+  box-shadow: -4px -4px 12px rgba(255,255,255,.05), 6px 8px 20px rgba(201,168,92,.28), inset 0 1px 0 rgba(255,255,255,.5);
+}
+
+/* ============ Gráfica ============ */
+.chart-card{
+  margin:18px 16px 6px;padding:22px 18px 16px;
+  background:linear-gradient(160deg,rgba(36,31,61,.88),rgba(28,25,48,.88));
+  border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow-out);
+  position:relative;
+}
+.chart-wrap{position:relative;height:230px}
+.chart-center{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;
+}
+.chart-center .total{
+  font-family:'Fraunces',serif;font-size:32px;font-weight:600;color:var(--gold);
+  font-variant-numeric:tabular-nums;transition:transform .25s ease;
+}
+.chart-center .total.pulse{transform:scale(1.12)}
+.chart-center .label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-dim);margin-top:2px}
+
+/* ============ Categorías con input propio ============ */
+.cats{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 16px}
+.cat{
+  padding:15px 13px 13px;border-radius:var(--radius);
+  background:linear-gradient(150deg,rgba(36,31,61,.88),rgba(28,25,48,.88));
+  border:1px solid var(--line);box-shadow:var(--shadow-out);
+  position:relative;overflow:hidden;
+}
+.cat .dot{width:10px;height:10px;border-radius:50%;position:absolute;top:14px;right:14px;box-shadow:0 0 10px currentColor}
+.cat .top{display:flex;align-items:center;gap:8px}
+.cat .emoji{font-size:20px}
+.cat .name{font-size:13px;color:var(--ink-dim);letter-spacing:.3px}
+.cat .amount{font-family:'Fraunces',serif;font-size:21px;font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums}
+.cat .entry{display:flex;gap:6px;margin-top:10px}
+.cat .entry input{
+  flex:1;min-width:0;padding:10px 10px;border-radius:12px;font-size:15px;color:var(--gold);
+  background:var(--bg);border:1px solid var(--line);box-shadow:var(--shadow-in);
+  font-family:'Outfit',sans-serif;font-weight:600;outline:none;text-align:center;
+  font-variant-numeric:tabular-nums;
+}
+.cat .entry input::placeholder{color:rgba(155,147,176,.55);font-weight:400}
+.cat .entry input:focus{border-color:rgba(232,207,160,.45)}
+.cat .entry .add{
+  width:42px;flex:none;border-radius:12px;font-size:20px;font-weight:400;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+}
+.cat-add{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  border:1px dashed rgba(232,207,160,.35);background:transparent;box-shadow:none;color:var(--gold);
+  min-height:128px;cursor:pointer;border-radius:var(--radius);font-family:inherit;
+  transition:background .15s ease;
+}
+.cat-add:active{background:rgba(232,207,160,.06)}
+.cat-add .plus{font-size:30px;line-height:1;font-weight:300}
+.cat-add span{font-size:12px;letter-spacing:.5px}
+.cat .delcat{
+  position:absolute;top:8px;right:32px;background:none;border:none;color:var(--ink-dim);
+  font-size:13px;cursor:pointer;padding:4px;
+}
+
+/* ============ Consejo IA ============ */
+.ai-card{margin:10px 16px;padding:18px;border-radius:var(--radius);
+  background:linear-gradient(150deg,rgba(36,31,61,.88),rgba(28,25,48,.88));
+  border:1px solid var(--line);box-shadow:var(--shadow-out)}
+.ai-card h3{font-family:'Fraunces',serif;font-size:17px;color:var(--gold);display:flex;align-items:center;gap:8px}
+.ai-card p{font-size:14px;color:var(--ink-dim);margin-top:8px;line-height:1.55;white-space:pre-wrap}
+.ai-card .btn{margin-top:14px;padding:12px 18px;font-size:14px;width:100%}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(36,28,8,.3);border-top-color:#241C08;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============ Lista de movimientos ============ */
+.movs-card{margin:10px 16px 30px;padding:18px;border-radius:var(--radius);
+  background:linear-gradient(150deg,rgba(36,31,61,.88),rgba(28,25,48,.88));
+  border:1px solid var(--line);box-shadow:var(--shadow-out)}
+.movs-card h3{font-family:'Fraunces',serif;font-size:17px;margin-bottom:6px}
+.mov{display:flex;justify-content:space-between;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line);animation:fadeIn .3s ease}
+.mov:last-child{border-bottom:none}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.mov .who{font-size:14.5px;display:flex;align-items:center;gap:8px}
+.mov .who .tag{font-size:11px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);color:var(--ink-dim)}
+.mov .when{font-size:12px;color:var(--ink-dim);margin-top:2px}
+.mov .val{font-variant-numeric:tabular-nums;font-weight:600}
+.mov .del{
+  background:linear-gradient(145deg,var(--surface-hi),var(--surface));
+  border:1px solid var(--line);box-shadow:var(--shadow-out);
+  color:var(--danger);font-size:14px;cursor:pointer;margin-left:12px;
+  width:34px;height:34px;border-radius:12px;transition:transform .12s ease, box-shadow .15s ease;
+}
+.mov .del:active{transform:scale(.94);box-shadow:var(--shadow-in)}
+.mov-empty{color:var(--ink-dim);font-size:14px;text-align:center;padding:20px 0}
+
+/* ============ Modales ============ */
+.overlay{position:fixed;inset:0;background:rgba(8,6,16,.66);backdrop-filter:blur(4px);z-index:40;opacity:0;pointer-events:none;transition:opacity .22s ease}
+.overlay.open{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  background:linear-gradient(180deg,var(--surface-hi),var(--bg2));
+  border-radius:28px 28px 0 0;border-top:1px solid var(--line);
+  padding:14px 22px calc(26px + env(safe-area-inset-bottom));
+  transform:translateY(105%);transition:transform .28s cubic-bezier(.32,.72,.28,1);
+  max-height:88vh;overflow-y:auto;
+}
+.sheet.open{transform:translateY(0)}
+.sheet .grip{width:44px;height:5px;border-radius:99px;background:rgba(255,255,255,.15);margin:0 auto 16px}
+.sheet h2{font-family:'Fraunces',serif;font-size:20px;margin-bottom:16px}
+.sheet h4{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin:18px 0 10px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-dim);margin-bottom:7px}
+.field input{
+  width:100%;padding:14px 16px;border-radius:14px;font-size:16px;color:var(--ink);
+  background:var(--bg);border:1px solid var(--line);box-shadow:var(--shadow-in);
+  font-family:inherit;outline:none;
+}
+.field input:focus{border-color:rgba(232,207,160,.45)}
+.hint{font-size:12.5px;color:var(--ink-dim);line-height:1.5;margin-bottom:14px}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  padding:10px 14px;border-radius:999px;font-size:15px;cursor:pointer;
+  background:var(--bg);border:1px solid var(--line);color:var(--ink-dim);
+  box-shadow:var(--shadow-out);transition:all .12s ease;font-family:inherit;
+}
+.chip.sel{background:linear-gradient(150deg,#F3DFB4,var(--gold-deep));color:#241C08;font-weight:600;border-color:transparent}
+.sheet .btn-gold{width:100%;padding:16px;font-size:16px;border-radius:16px;margin-top:6px}
+.sync-status{font-size:13px;margin-top:12px;text-align:center;color:var(--ink-dim)}
+
+.settings-btn{width:38px;height:38px;font-size:15px;margin-left:6px}
+.toast{
+  position:fixed;top:18px;left:50%;transform:translate(-50%,-90px);z-index:60;
+  background:linear-gradient(150deg,#F3DFB4,var(--gold-deep));color:#241C08;
+  padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);transition:transform .3s cubic-bezier(.32,.72,.28,1);
+}
+.toast.show{transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<div class="fx" id="fx">
+  <span class="orb o1"></span><span class="orb o2"></span><span class="orb o3"></span>
+</div>
+
+<header>
+  <div class="brand">
+    <small>Gastos del hogar</small>
+    <h1>Mi Casa <span class="cloud-dot" id="cloudDot" title="Estado de la nube"></span></h1>
+  </div>
+  <div class="month-nav">
+    <button class="btn" id="prevMonth" aria-label="Mes anterior">‹</button>
+    <div class="month-label" id="monthLabel"></div>
+    <button class="btn" id="nextMonth" aria-label="Mes siguiente">›</button>
+    <button class="btn settings-btn" id="settingsBtn" aria-label="Ajustes">⚙</button>
+  </div>
+</header>
+
+<section class="chart-card">
+  <div class="chart-wrap">
+    <canvas id="donut"></canvas>
+    <div class="chart-center">
+      <div class="total" id="totalLabel">0,00 €</div>
+      <div class="label">Total del mes</div>
+    </div>
+  </div>
+</section>
+
+<section class="cats" id="cats"></section>
+
+<section class="ai-card">
+  <h3>✦ Consejo del mes · IA</h3>
+  <p id="aiText">Al terminar el mes, pídeme un consejo personalizado para ahorrar más basado en tus gastos reales.</p>
+  <button class="btn btn-gold" id="aiBtn">Pedir consejo a Gemini</button>
+</section>
+
+<section class="movs-card">
+  <h3>Movimientos del mes</h3>
+  <div id="movsList"></div>
+</section>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- Sheet: nueva categoría -->
+<div class="sheet" id="sheetCat">
+  <div class="grip"></div>
+  <h2>Nuevo apartado</h2>
+  <div class="field">
+    <label>Nombre</label>
+    <input type="text" id="catName" placeholder="Ej. Mascotas, Gasolina…">
+  </div>
+  <div class="field">
+    <label>Emoji</label>
+    <div class="chip-row" id="catEmojis"></div>
+  </div>
+  <button class="btn btn-gold" id="catSave">Crear apartado</button>
+</div>
+
+<!-- Sheet: ajustes -->
+<div class="sheet" id="sheetSettings">
+  <div class="grip"></div>
+  <h2>Ajustes</h2>
+
+  <h4>☁ Nube (Supabase)</h4>
+  <div class="field">
+    <label>URL del proyecto</label>
+    <input type="text" id="sbUrl" placeholder="https://xxxx.supabase.co" autocomplete="off">
+  </div>
+  <div class="field">
+    <label>Anon key (public)</label>
+    <input type="password" id="sbKey" placeholder="eyJhbGciOi…" autocomplete="off">
+  </div>
+  <p class="hint">Con esto tus gastos se guardan en la nube y los ves igual desde el móvil y el PC. Las instrucciones y el SQL para crear las tablas están en el README del ZIP. Si lo dejas vacío, la app funciona igual pero solo en este dispositivo.</p>
+
+  <h4>✦ IA (Gemini)</h4>
+  <div class="field">
+    <label>API key de Gemini</label>
+    <input type="password" id="apiKey" placeholder="Pega aquí tu clave de Google AI Studio" autocomplete="off">
+  </div>
+  <p class="hint">Consíguela gratis en <b>aistudio.google.com</b> → “Get API key”.</p>
+
+  <button class="btn btn-gold" id="settingsSave">Guardar</button>
+  <div class="sync-status" id="syncStatus"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= Partículas del fondo ================= */
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const fx=document.getElementById('fx');
+  // Doradas: suben desde abajo (por toda la pantalla)
+  for(let i=0;i<26;i++){
+    const p=document.createElement('span');
+    p.className='p';
+    const s=3+Math.random()*5;
+    p.style.width=s+'px';p.style.height=s+'px';
+    p.style.left=(Math.random()*100)+'vw';
+    p.style.animationDuration=(12+Math.random()*16)+'s';
+    p.style.animationDelay=(-Math.random()*20)+'s';
+    fx.appendChild(p);
+  }
+  // Moradas: caen desde arriba a la izquierda
+  for(let i=0;i<16;i++){
+    const p=document.createElement('span');
+    p.className='pm';
+    const s=3+Math.random()*5;
+    p.style.width=s+'px';p.style.height=s+'px';
+    p.style.left=(Math.random()*45)+'vw'; // mitad izquierda
+    p.style.animationDuration=(12+Math.random()*16)+'s';
+    p.style.animationDelay=(-Math.random()*20)+'s';
+    fx.appendChild(p);
+  }
+})();
+
+/* ================= Estado ================= */
+const LS_KEY='hogar_gastos_v2';
+const DEFAULT_CATS=[
+  {id:'comida',   name:'Comida',       emoji:'🛒', color:'#E8CFA0'},
+  {id:'regalos',  name:'Regalos',      emoji:'🎁', color:'#C77BAF'},
+  {id:'ropa',     name:'Ropa',         emoji:'👕', color:'#7BA7C7'},
+  {id:'fijos',    name:'Gastos fijos', emoji:'🏠', color:'#8BC7A0'},
+  {id:'fuera',    name:'Comer fuera',  emoji:'🍽️', color:'#E0916A'},
+];
+const EXTRA_COLORS=['#B08CE0','#E0C86A','#6AD0C8','#E07B6A','#9BB8E8','#C8E06A'];
+const EMOJIS=['🐾','⛽','💊','📱','🎮','✈️','🚗','📚','💇','🧾','🎬','🏋️'];
+
+let state=loadLocal();
+function loadLocal(){
+  try{
+    const s=JSON.parse(localStorage.getItem(LS_KEY));
+    if(s&&s.cats)return s;
+    // migrar de la versión anterior si existía
+    const old=JSON.parse(localStorage.getItem('hogar_gastos_v1'));
+    if(old&&old.cats)return old;
+  }catch(e){}
+  return {cats:[...DEFAULT_CATS],expenses:[]};
+}
+function saveLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}}
+
+let view=new Date(); view.setDate(1);
+const fmtEUR=n=>n.toLocaleString('es-ES',{style:'currency',currency:'EUR'});
+const monthKey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+const monthName=d=>d.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+const uid=()=> (crypto.randomUUID ? crypto.randomUUID() : 'id'+Date.now()+Math.floor(Math.random()*1e6));
+
+function expensesOfMonth(){const k=monthKey(view);return state.expenses.filter(e=>e.date.startsWith(k));}
+function totalsByCat(){
+  const t={};expensesOfMonth().forEach(e=>{t[e.cat]=(t[e.cat]||0)+e.amount});return t;
+}
+
+/* ================= Supabase (REST) ================= */
+const cloudDot=document.getElementById('cloudDot');
+function sbConf(){
+  const url=(localStorage.getItem('sb_url')||'').replace(/\/+$/,'');
+  const key=localStorage.getItem('sb_key')||'';
+  return (url&&key)?{url,key}:null;
+}
+async function sb(path,opts={}){
+  const c=sbConf();if(!c)throw new Error('sin-config');
+  const r=await fetch(c.url+'/rest/v1/'+path,{
+    ...opts,
+    headers:{
+      'apikey':c.key,'Authorization':'Bearer '+c.key,
+      'Content-Type':'application/json','Prefer':'return=minimal',
+      ...(opts.headers||{})
+    }
+  });
+  if(!r.ok){const t=await r.text();throw new Error(t||('HTTP '+r.status));}
+  const ct=r.headers.get('content-type')||'';
+  return ct.includes('json')?r.json().catch(()=>null):null;
+}
+function setCloud(status){ // 'off' | 'on' | 'err'
+  cloudDot.className='cloud-dot'+(status==='on'?' on':status==='err'?' err':'');
+  cloudDot.title=status==='on'?'Nube sincronizada':status==='err'?'Error de nube (datos guardados en el móvil)':'Nube no configurada';
+}
+
+/* Carga inicial desde la nube (la nube manda si está configurada) */
+async function pullCloud(){
+  if(!sbConf()){setCloud('off');return;}
+  try{
+    const [cats,exps]=await Promise.all([
+      sb('apartados_casa?select=*',{headers:{'Prefer':'return=representation'}}),
+      sb('gastos_casa?select=*&order=fecha.desc&limit=2000',{headers:{'Prefer':'return=representation'}})
+    ]);
+    // Si la nube está vacía y aquí hay datos locales, subimos lo local (primera sincronización)
+    if((!exps||!exps.length)&&(!cats||!cats.length)&&(state.expenses.length||state.cats.length>DEFAULT_CATS.length)){
+      await firstUpload();
+    }else{
+      const customCats=(cats||[]).map(c=>({id:c.id,name:c.nombre,emoji:c.emoji,color:c.color}));
+      const merged=[...DEFAULT_CATS];
+      customCats.forEach(c=>{if(!merged.some(m=>m.id===c.id))merged.push(c);});
+      state.cats=merged;
+      state.expenses=(exps||[]).map(e=>({id:e.id,cat:e.apartado,amount:Number(e.importe),date:e.fecha}));
+      saveLocal();
+    }
+    setCloud('on');renderAll();
+  }catch(e){setCloud(sbConf()?'err':'off');}
+}
+async function firstUpload(){
+  const custom=state.cats.filter(c=>!DEFAULT_CATS.some(d=>d.id===c.id));
+  if(custom.length)await sb('apartados_casa',{method:'POST',body:JSON.stringify(custom.map(c=>({id:c.id,nombre:c.name,emoji:c.emoji,color:c.color})))});
+  if(state.expenses.length)await sb('gastos_casa',{method:'POST',body:JSON.stringify(state.expenses.map(e=>({id:String(e.id),apartado:e.cat,importe:e.amount,fecha:e.date})))});
+}
+/* Escrituras: local al instante + nube en segundo plano */
+function cloudTry(fn){
+  if(!sbConf())return;
+  fn().then(()=>setCloud('on')).catch(()=>{setCloud('err');toast('Sin nube ahora mismo: guardado en el móvil');});
+}
+
+/* ================= Añadir gasto desde la tarjeta ================= */
+function addExpense(catId, inputEl){
+  const raw=(inputEl.value||'').replace(',','.');
+  const amt=parseFloat(raw);
+  if(!amt||amt<=0){toast('Pon un importe válido');inputEl.focus();return;}
+  const now=new Date();
+  const d=(monthKey(view)===monthKey(now))?now:new Date(view.getFullYear(),view.getMonth(),15);
+  const exp={id:uid(),cat:catId,amount:Math.round(amt*100)/100,date:d.toISOString()};
+  state.expenses.push(exp);
+  saveLocal();
+  cloudTry(()=>sb('gastos_casa',{method:'POST',body:JSON.stringify({id:exp.id,apartado:exp.cat,importe:exp.amount,fecha:exp.date})}));
+  inputEl.value='';
+  renderAll();
+  toast('Gasto guardado ✓');
+}
+function deleteExpense(id){
+  state.expenses=state.expenses.filter(x=>x.id!==id);
+  saveLocal();
+  cloudTry(()=>sb('gastos_casa?id=eq.'+encodeURIComponent(id),{method:'DELETE'}));
+  renderAll();toast('Gasto eliminado');
+}
+
+/* ================= Gráfica ================= */
+let chart=null;
+function renderChart(){
+  const totals=totalsByCat();
+  const active=state.cats.filter(c=>totals[c.id]>0);
+  const total=Object.values(totals).reduce((a,b)=>a+b,0);
+  const lbl=document.getElementById('totalLabel');
+  lbl.textContent=fmtEUR(total);
+  lbl.classList.remove('pulse');void lbl.offsetWidth;lbl.classList.add('pulse');
+
+  const data={
+    labels:active.map(c=>c.emoji+' '+c.name),
+    datasets:[{
+      data:active.map(c=>totals[c.id]),
+      backgroundColor:active.map(c=>c.color),
+      borderColor:'#100E1B',borderWidth:3,hoverOffset:10,borderRadius:6,
+    }]
+  };
+  if(!chart){
+    chart=new Chart(document.getElementById('donut'),{
+      type:'doughnut',data,
+      options:{
+        cutout:'72%',responsive:true,maintainAspectRatio:false,
+        animation:{animateRotate:true,duration:700,easing:'easeOutQuart'},
+        plugins:{
+          legend:{position:'bottom',labels:{color:'#9B93B0',boxWidth:10,boxHeight:10,usePointStyle:true,pointStyle:'circle',padding:14,font:{family:'Outfit',size:12}}},
+          tooltip:{
+            backgroundColor:'#241F3D',borderColor:'rgba(232,207,160,.25)',borderWidth:1,
+            titleFont:{family:'Outfit'},bodyFont:{family:'Outfit'},padding:12,cornerRadius:12,
+            callbacks:{label:ctx=>{
+              const v=ctx.parsed,tot=ctx.dataset.data.reduce((a,b)=>a+b,0);
+              return ' '+fmtEUR(v)+' · '+Math.round(v/tot*100)+'%';
+            }}
+          }
+        }
+      }
+    });
+  }else{chart.data=data;chart.update();}
+}
+
+/* ================= Categorías ================= */
+function renderCats(){
+  const totals=totalsByCat();
+  const wrap=document.getElementById('cats');
+  wrap.innerHTML='';
+  state.cats.forEach(c=>{
+    const el=document.createElement('div');
+    el.className='cat';
+    const isCustom=!DEFAULT_CATS.some(d=>d.id===c.id);
+    el.innerHTML=`<span class="dot" style="color:${c.color};background:${c.color}"></span>
+      ${isCustom?'<button class="delcat" title="Eliminar apartado">🗑</button>':''}
+      <div class="top"><span class="emoji">${c.emoji}</span><span class="name">${c.name}</span></div>
+      <div class="amount">${fmtEUR(totals[c.id]||0)}</div>
+      <div class="entry">
+        <input type="text" inputmode="decimal" placeholder="0,00 €" aria-label="Nuevo gasto en ${c.name}">
+        <button class="btn btn-gold add" title="Añadir a ${c.name}">＋</button>
+      </div>`;
+    const input=el.querySelector('input');
+    el.querySelector('.add').onclick=()=>addExpense(c.id,input);
+    input.addEventListener('keydown',e=>{if(e.key==='Enter')addExpense(c.id,input);});
+    if(isCustom){
+      el.querySelector('.delcat').onclick=()=>{
+        if(confirm('¿Eliminar "'+c.name+'" y todos sus gastos?')){
+          state.cats=state.cats.filter(x=>x.id!==c.id);
+          state.expenses=state.expenses.filter(x=>x.cat!==c.id);
+          saveLocal();
+          cloudTry(async()=>{
+            await sb('gastos_casa?apartado=eq.'+encodeURIComponent(c.id),{method:'DELETE'});
+            await sb('apartados_casa?id=eq.'+encodeURIComponent(c.id),{method:'DELETE'});
+          });
+          renderAll();
+        }
+      };
+    }
+    wrap.appendChild(el);
+  });
+  const add=document.createElement('button');
+  add.className='cat-add';
+  add.innerHTML='<span class="plus">＋</span><span>Añadir apartado</span>';
+  add.onclick=()=>openSheet('sheetCat');
+  wrap.appendChild(add);
+}
+
+/* ================= Lista de movimientos ================= */
+function renderMovs(){
+  const list=document.getElementById('movsList');
+  const movs=expensesOfMonth().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(!movs.length){list.innerHTML='<div class="mov-empty">Aún no hay gastos este mes. Escribe un importe en cualquier apartado y pulsa ＋.</div>';return;}
+  list.innerHTML='';
+  movs.forEach(m=>{
+    const c=state.cats.find(x=>x.id===m.cat)||{name:'Otro',emoji:'💶',color:'#9B93B0'};
+    const d=new Date(m.date);
+    const row=document.createElement('div');
+    row.className='mov';
+    row.innerHTML=`<div>
+        <div class="who">${c.emoji} <span class="tag" style="border-color:${c.color}55;color:${c.color}">${c.name}</span></div>
+        <div class="when">${d.toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})}</div>
+      </div>
+      <div style="display:flex;align-items:center">
+        <span class="val">${fmtEUR(m.amount)}</span>
+        <button class="del" aria-label="Borrar este gasto">✕</button>
+      </div>`;
+    row.querySelector('.del').onclick=()=>deleteExpense(m.id);
+    list.appendChild(row);
+  });
+}
+
+/* ================= Sheets ================= */
+const overlay=document.getElementById('overlay');
+let openId=null;
+function openSheet(id){
+  closeSheet();
+  openId=id;
+  overlay.classList.add('open');
+  document.getElementById(id).classList.add('open');
+}
+function closeSheet(){
+  overlay.classList.remove('open');
+  if(openId)document.getElementById(openId).classList.remove('open');
+  openId=null;
+}
+overlay.onclick=closeSheet;
+
+/* ---- Nueva categoría ---- */
+let selEmoji=EMOJIS[0];
+function renderEmojis(){
+  const row=document.getElementById('catEmojis');
+  row.innerHTML='';
+  EMOJIS.forEach(e=>{
+    const b=document.createElement('button');
+    b.className='chip'+(selEmoji===e?' sel':'');
+    b.textContent=e;
+    b.onclick=()=>{selEmoji=e;renderEmojis();};
+    row.appendChild(b);
+  });
+}
+document.getElementById('catSave').onclick=()=>{
+  const name=document.getElementById('catName').value.trim();
+  if(!name){toast('Ponle un nombre');return;}
+  const cat={id:'c'+Date.now(),name,emoji:selEmoji,color:EXTRA_COLORS[state.cats.length%EXTRA_COLORS.length]};
+  state.cats.push(cat);
+  saveLocal();
+  cloudTry(()=>sb('apartados_casa',{method:'POST',body:JSON.stringify({id:cat.id,nombre:cat.name,emoji:cat.emoji,color:cat.color})}));
+  renderAll();closeSheet();
+  document.getElementById('catName').value='';
+  toast('Apartado creado ✓');
+};
+
+/* ---- Ajustes ---- */
+document.getElementById('settingsBtn').onclick=()=>{
+  document.getElementById('sbUrl').value=localStorage.getItem('sb_url')||'';
+  document.getElementById('sbKey').value=localStorage.getItem('sb_key')||'';
+  document.getElementById('apiKey').value=localStorage.getItem('gemini_key')||'';
+  document.getElementById('syncStatus').textContent='';
+  openSheet('sheetSettings');
+};
+document.getElementById('settingsSave').onclick=async()=>{
+  localStorage.setItem('sb_url',document.getElementById('sbUrl').value.trim());
+  localStorage.setItem('sb_key',document.getElementById('sbKey').value.trim());
+  localStorage.setItem('gemini_key',document.getElementById('apiKey').value.trim());
+  const st=document.getElementById('syncStatus');
+  if(sbConf()){
+    st.textContent='Conectando con la nube…';
+    await pullCloud();
+    st.textContent=cloudDot.classList.contains('on')?'✓ Nube conectada y sincronizada':'✕ No pude conectar: revisa URL, key y que las tablas existan';
+    if(cloudDot.classList.contains('on')){setTimeout(closeSheet,900);toast('Nube conectada ✓');}
+  }else{
+    setCloud('off');closeSheet();toast('Guardado ✓');
+  }
+};
+
+/* ---- Meses ---- */
+document.getElementById('prevMonth').onclick=()=>{view.setMonth(view.getMonth()-1);renderAll();};
+document.getElementById('nextMonth').onclick=()=>{view.setMonth(view.getMonth()+1);renderAll();};
+
+/* ================= Consejo IA (Gemini) ================= */
+document.getElementById('aiBtn').onclick=async()=>{
+  const key=localStorage.getItem('gemini_key');
+  const out=document.getElementById('aiText');
+  if(!key){openSheet('sheetSettings');toast('Primero pega tu API key de Gemini');return;}
+  const totals=totalsByCat();
+  const total=Object.values(totals).reduce((a,b)=>a+b,0);
+  if(total===0){out.textContent='Todavía no hay gastos este mes. Añade algunos y vuelve a pedirme consejo.';return;}
+  const resumen=state.cats.filter(c=>totals[c.id]>0)
+    .map(c=>`- ${c.name}: ${totals[c.id].toFixed(2)} € (${Math.round(totals[c.id]/total*100)}%)`).join('\n');
+  const btn=document.getElementById('aiBtn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Analizando tus gastos…';
+  try{
+    const prompt=`Eres un asesor de finanzas domésticas cercano y práctico. Estos son mis gastos de ${monthName(view)} (total ${total.toFixed(2)} €):\n${resumen}\n\nDame en español un consejo breve y concreto (máx. 120 palabras) para ahorrar más el mes que viene: señala la categoría donde más margen de ahorro veo y 2-3 acciones prácticas. Sin listas con asteriscos, tono cercano.`;
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+    });
+    const data=await r.json();
+    const txt=data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    out.textContent=txt||('No pude generar el consejo. '+(data?.error?.message||'Revisa tu API key.'));
+  }catch(e){
+    out.textContent='Error de conexión con Gemini. Comprueba tu internet y tu API key.';
+  }
+  btn.disabled=false;btn.textContent='Pedir consejo a Gemini';
+};
+
+/* ================= Utilidades ================= */
+let toastT=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);
+}
+function renderAll(){
+  document.getElementById('monthLabel').textContent=monthName(view);
+  renderCats();renderChart();renderMovs();
+}
+renderEmojis();
+renderAll();
+pullCloud();
+window.addEventListener('online',pullCloud);
+
+/* PWA */
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+</script>
+</body>
+</html>
