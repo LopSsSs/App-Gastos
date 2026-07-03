@@ -7,9 +7,8 @@
 <title>Hogar · Gastos</title>
 <meta name="description" content="Control premium de gastos del hogar con gráfica interactiva, nube y consejo mensual con IA.">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -254,11 +253,6 @@ header{padding:26px 22px 6px;display:flex;align-items:flex-end;justify-content:s
 .sync-status{font-size:13px;margin-top:12px;text-align:center;color:var(--ink-dim)}
 
 .settings-btn{width:38px;height:38px;font-size:15px;margin-left:6px}
-.install-btn{
-  display:none;align-items:center;gap:6px;margin-top:8px;
-  font-size:12px;padding:8px 14px;border-radius:999px;
-}
-.install-btn.show{display:inline-flex}
 .toast{
   position:fixed;top:18px;left:50%;transform:translate(-50%,-90px);z-index:60;
   background:linear-gradient(150deg,#F3DFB4,var(--gold-deep));color:#241C08;
@@ -278,7 +272,6 @@ header{padding:26px 22px 6px;display:flex;align-items:flex-end;justify-content:s
   <div class="brand">
     <small>Gastos del hogar</small>
     <h1>Mi Casa <span class="cloud-dot" id="cloudDot" title="Estado de la nube"></span></h1>
-    <button class="btn btn-gold install-btn" id="installBtn">⬇️ Instalar aplicación</button>
   </div>
   <div class="month-nav">
     <button class="btn" id="prevMonth" aria-label="Mes anterior">‹</button>
@@ -448,37 +441,71 @@ function setCloud(status){ // 'off' | 'on' | 'err'
   cloudDot.title=status==='on'?'Nube sincronizada':status==='err'?'Error de nube (datos guardados en el móvil)':'Nube no configurada';
 }
 
-/* Carga inicial desde la nube (la nube manda si está configurada) */
+/* Cola de operaciones pendientes (si la nube falla, se reintenta después) */
+function getPending(){try{return JSON.parse(localStorage.getItem('sb_pending'))||[]}catch(e){return[]}}
+function setPending(q){localStorage.setItem('sb_pending',JSON.stringify(q))}
+function queueOp(op){const q=getPending();q.push(op);setPending(q);}
+async function runOp(op){
+  if(op.t==='iexp')return sb('gastos_casa',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(op.d)});
+  if(op.t==='dexp')return sb('gastos_casa?id=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
+  if(op.t==='icat')return sb('apartados_casa',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(op.d)});
+  if(op.t==='dcat'){
+    await sb('gastos_casa?apartado=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
+    return sb('apartados_casa?id=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
+  }
+}
+async function flushPending(){
+  let q=getPending();
+  while(q.length){
+    await runOp(q[0]);   // si falla, lanza y se queda en cola
+    q.shift();setPending(q);
+  }
+}
+/* Ejecuta una operación en la nube; si falla, la deja en cola para reintentar */
+function cloudOp(op){
+  if(!sbConf())return;
+  runOp(op).then(()=>setCloud('on')).catch(()=>{
+    queueOp(op);setCloud('err');
+    toast('Sin nube ahora mismo: se reintentará solo');
+  });
+}
+
+/* Carga desde la nube FUSIONANDO: nada local se pierde */
 async function pullCloud(){
   if(!sbConf()){setCloud('off');return;}
   try{
+    await flushPending(); // primero, lo que quedó pendiente
     const [cats,exps]=await Promise.all([
       sb('apartados_casa?select=*',{headers:{'Prefer':'return=representation'}}),
       sb('gastos_casa?select=*&order=fecha.desc&limit=2000',{headers:{'Prefer':'return=representation'}})
     ]);
-    // Si la nube está vacía y aquí hay datos locales, subimos lo local (primera sincronización)
-    if((!exps||!exps.length)&&(!cats||!cats.length)&&(state.expenses.length||state.cats.length>DEFAULT_CATS.length)){
-      await firstUpload();
-    }else{
-      const customCats=(cats||[]).map(c=>({id:c.id,name:c.nombre,emoji:c.emoji,color:c.color}));
-      const merged=[...DEFAULT_CATS];
-      customCats.forEach(c=>{if(!merged.some(m=>m.id===c.id))merged.push(c);});
-      state.cats=merged;
-      state.expenses=(exps||[]).map(e=>({id:e.id,cat:e.apartado,amount:Number(e.importe),date:e.fecha}));
-      saveLocal();
+    const cloudExps=(exps||[]).map(e=>({id:e.id,cat:e.apartado,amount:Number(e.importe),date:e.fecha}));
+    const cloudCats=(cats||[]).map(c=>({id:c.id,name:c.nombre,emoji:c.emoji,color:c.color}));
+
+    // Gastos locales que la nube no tiene → subirlos (escrituras perdidas)
+    const cloudIds=new Set(cloudExps.map(e=>String(e.id)));
+    const missingExps=state.expenses.filter(e=>!cloudIds.has(String(e.id)));
+    if(missingExps.length){
+      await sb('gastos_casa',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify(missingExps.map(e=>({id:String(e.id),apartado:e.cat,importe:e.amount,fecha:e.date})))});
+      cloudExps.push(...missingExps);
     }
+    // Apartados personalizados locales que faltan en la nube → subirlos
+    const cloudCatIds=new Set(cloudCats.map(c=>c.id));
+    const missingCats=state.cats.filter(c=>!DEFAULT_CATS.some(d=>d.id===c.id)&&!cloudCatIds.has(c.id));
+    if(missingCats.length){
+      await sb('apartados_casa',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify(missingCats.map(c=>({id:c.id,nombre:c.name,emoji:c.emoji,color:c.color})))});
+      cloudCats.push(...missingCats);
+    }
+
+    const merged=[...DEFAULT_CATS];
+    cloudCats.forEach(c=>{if(!merged.some(m=>m.id===c.id))merged.push(c);});
+    state.cats=merged;
+    state.expenses=cloudExps;
+    saveLocal();
     setCloud('on');renderAll();
   }catch(e){setCloud(sbConf()?'err':'off');}
-}
-async function firstUpload(){
-  const custom=state.cats.filter(c=>!DEFAULT_CATS.some(d=>d.id===c.id));
-  if(custom.length)await sb('apartados_casa',{method:'POST',body:JSON.stringify(custom.map(c=>({id:c.id,nombre:c.name,emoji:c.emoji,color:c.color})))});
-  if(state.expenses.length)await sb('gastos_casa',{method:'POST',body:JSON.stringify(state.expenses.map(e=>({id:String(e.id),apartado:e.cat,importe:e.amount,fecha:e.date})))});
-}
-/* Escrituras: local al instante + nube en segundo plano */
-function cloudTry(fn){
-  if(!sbConf())return;
-  fn().then(()=>setCloud('on')).catch(()=>{setCloud('err');toast('Sin nube ahora mismo: guardado en el móvil');});
 }
 
 /* ================= Añadir gasto desde la tarjeta ================= */
@@ -491,7 +518,7 @@ function addExpense(catId, inputEl){
   const exp={id:uid(),cat:catId,amount:Math.round(amt*100)/100,date:d.toISOString()};
   state.expenses.push(exp);
   saveLocal();
-  cloudTry(()=>sb('gastos_casa',{method:'POST',body:JSON.stringify({id:exp.id,apartado:exp.cat,importe:exp.amount,fecha:exp.date})}));
+  cloudOp({t:'iexp',d:{id:exp.id,apartado:exp.cat,importe:exp.amount,fecha:exp.date}});
   inputEl.value='';
   renderAll();
   toast('Gasto guardado ✓');
@@ -499,7 +526,7 @@ function addExpense(catId, inputEl){
 function deleteExpense(id){
   state.expenses=state.expenses.filter(x=>x.id!==id);
   saveLocal();
-  cloudTry(()=>sb('gastos_casa?id=eq.'+encodeURIComponent(id),{method:'DELETE'}));
+  cloudOp({t:'dexp',id:id});
   renderAll();toast('Gasto eliminado');
 }
 
@@ -569,10 +596,7 @@ function renderCats(){
           state.cats=state.cats.filter(x=>x.id!==c.id);
           state.expenses=state.expenses.filter(x=>x.cat!==c.id);
           saveLocal();
-          cloudTry(async()=>{
-            await sb('gastos_casa?apartado=eq.'+encodeURIComponent(c.id),{method:'DELETE'});
-            await sb('apartados_casa?id=eq.'+encodeURIComponent(c.id),{method:'DELETE'});
-          });
+          cloudOp({t:'dcat',id:c.id});
           renderAll();
         }
       };
@@ -645,7 +669,7 @@ document.getElementById('catSave').onclick=()=>{
   const cat={id:'c'+Date.now(),name,emoji:selEmoji,color:EXTRA_COLORS[state.cats.length%EXTRA_COLORS.length]};
   state.cats.push(cat);
   saveLocal();
-  cloudTry(()=>sb('apartados_casa',{method:'POST',body:JSON.stringify({id:cat.id,nombre:cat.name,emoji:cat.emoji,color:cat.color})}));
+  cloudOp({t:'icat',d:{id:cat.id,nombre:cat.name,emoji:cat.emoji,color:cat.color}});
   renderAll();closeSheet();
   document.getElementById('catName').value='';
   toast('Apartado creado ✓');
@@ -720,37 +744,10 @@ renderEmojis();
 renderAll();
 pullCloud();
 window.addEventListener('online',pullCloud);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pullCloud();});
 
 /* PWA */
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
-
-/* Instalar aplicación */
-const installBtn=document.getElementById('installBtn');
-const isStandalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
-let deferredPrompt=null;
-if(!isStandalone){
-  window.addEventListener('beforeinstallprompt',e=>{
-    e.preventDefault();
-    deferredPrompt=e;
-    installBtn.classList.add('show');
-  });
-  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  if(isIOS)installBtn.classList.add('show');
-}
-installBtn.onclick=async()=>{
-  if(deferredPrompt){
-    deferredPrompt.prompt();
-    const {outcome}=await deferredPrompt.userChoice;
-    deferredPrompt=null;
-    installBtn.classList.remove('show');
-    if(outcome==='accepted')toast('¡App instalada! 🎉');
-  }else if(/iphone|ipad|ipod/i.test(navigator.userAgent)){
-    toast('Toca Compartir ⬆️ y luego "Añadir a pantalla de inicio"');
-  }else{
-    toast('Usa el menú del navegador → "Instalar aplicación"');
-  }
-};
-window.addEventListener('appinstalled',()=>{installBtn.classList.remove('show');toast('App instalada ✓');});
 </script>
 </body>
 </html>

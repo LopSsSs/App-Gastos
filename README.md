@@ -1,48 +1,38 @@
-# App Gastos
+# Mi Casa · Gastos del hogar (PWA premium)
 
-Desplegado en Vercel: https://app-gastos.vercel.app
+App de control de gastos domésticos con gráfica interactiva, categorías personalizables y consejo mensual de ahorro con IA (Gemini).
 
-PWA (Progressive Web App) para el control de gastos domésticos, con gráfica interactiva, categorías personalizables, sincronización opcional en la nube (Supabase) y consejo mensual de ahorro con IA (Gemini).
-
-El código de la aplicación está en [`mi-casa-gastos-2/gastos-casa`](mi-casa-gastos-2/gastos-casa).
-
-## Instalación y uso
-
-### Opción 1: abrir en local
-
-1. Clona el repositorio:
-   ```bash
-   git clone https://github.com/LopSsSs/App-Gastos.git
-   cd App-Gastos/mi-casa-gastos-2/gastos-casa
-   ```
-2. Abre `index.html` directamente en el navegador, o sirve la carpeta con un servidor local (recomendado para que el Service Worker funcione correctamente):
-   ```bash
-   npx serve .
-   ```
-3. Entra en la URL que te indique (por ejemplo `http://localhost:3000`).
-
-### Opción 2: desplegar en Netlify (recomendado, 2 minutos)
+## Cómo subirla a Netlify (2 minutos)
 
 1. Entra en https://app.netlify.com
-2. Ve a "Sites" → "Add new site → Deploy manually" y arrastra la carpeta `mi-casa-gastos-2/gastos-casa`.
-3. Netlify te dará una URL tipo `https://loquesea.netlify.app` (puedes personalizarla en Site settings → Change site name).
+2. Ve a "Sites" → arrastra **toda esta carpeta descomprimida** a la zona de "drag and drop" (o usa "Add new site → Deploy manually").
+3. Netlify te dará una URL tipo `https://loquesea.netlify.app`. Puedes cambiar el nombre en Site settings → Change site name (por ejemplo `micasa-gastos`).
 
-### Instalar como app en el móvil
+## Instalarla en el móvil como app
 
-1. Abre la URL desplegada en Chrome (Android).
+1. Abre la URL de Netlify en Chrome (Android).
 2. Menú ⋮ → "Añadir a pantalla de inicio" / "Instalar aplicación".
-3. Queda instalada con icono propio y funciona sin conexión (los datos se guardan en el móvil, en `localStorage`).
+3. Se instala con icono propio y funciona incluso sin conexión (los datos se guardan en el móvil, en localStorage).
 
-### Activar el consejo de IA (Gemini) — opcional
+## Activar el consejo de IA (Gemini)
 
 1. Entra en https://aistudio.google.com → "Get API key" → crea una clave gratuita.
-2. En la app, pulsa el botón ⚙ y pega la clave (se guarda solo en tu dispositivo).
-3. Pulsa "Pedir consejo a Gemini" para recibir recomendaciones de ahorro basadas en tus gastos del mes.
+2. En la app, toca el botón ⚙ (arriba a la derecha) y pega la clave. Se guarda solo en tu dispositivo.
+3. Al final del mes (o cuando quieras), pulsa "Pedir consejo a Gemini": analiza tus gastos reales del mes y te da recomendaciones para ahorrar.
 
-### Sincronización en la nube (Supabase) — opcional
+## Qué incluye
 
-Sigue los pasos de [`SUPABASE.md`](mi-casa-gastos-2/gastos-casa/SUPABASE.md) para conectar la app a un proyecto gratuito de Supabase y sincronizar los datos entre varios dispositivos.
+- 5 apartados por defecto: Comida, Regalos, Ropa, Gastos fijos, Comer fuera.
+- Botón ＋ para crear tus propios apartados (con emoji y color automático).
+- Total por apartado + donut interactivo (toca los sectores para ver importe y %).
+- Navegación por meses ‹ › para consultar histórico.
+- Toca un apartado para ver/borrar sus movimientos; las categorías creadas por ti se pueden eliminar.
+- Botones con relieve (neumorfismo), paleta índigo/oro champán y aurora animada de fondo (respeta "reducir movimiento" del sistema).
+
+## Nube (opcional)
+
+Mira el archivo SUPABASE.md: con 3 pasos conectas la app a Supabase (gratis) y tus datos se sincronizan entre móvil y PC.
 
 ## Nota sobre los datos
 
-Por defecto todo se guarda en `localStorage` del navegador/móvil. Si borras los datos del navegador se pierden los gastos, salvo que hayas activado la sincronización con Supabase.
+Todo se guarda en localStorage del navegador/móvil. Si borras los datos del navegador, se pierden los gastos. Si más adelante quieres sincronización en la nube, se puede conectar a Supabase igual que tus otras apps.
