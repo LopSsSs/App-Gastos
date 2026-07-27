@@ -15,6 +15,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
 <style>
 :root{
   --bg:#100E1B;
@@ -253,6 +255,63 @@ header{padding:26px 22px 6px;display:flex;align-items:flex-end;justify-content:s
 .sync-status{font-size:13px;margin-top:12px;text-align:center;color:var(--ink-dim)}
 
 .settings-btn{width:38px;height:38px;font-size:15px;margin-left:6px}
+
+/* ============ Tickets ============ */
+.tk-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.tk-actions .btn{padding:13px 10px;font-size:13.5px}
+.tk-actions .btn-gold{grid-column:1 / -1;padding:15px;font-size:15px}
+.tk-stats{display:flex;gap:14px;margin-top:12px;font-size:13px;color:var(--ink-dim)}
+.tk-stats b{color:var(--gold);font-family:'Fraunces',serif;font-size:16px;display:block}
+
+.tkline{display:grid;grid-template-columns:1fr 52px 64px 64px 30px;gap:6px;margin-bottom:8px;align-items:center}
+.tkline input{
+  padding:9px 8px;border-radius:10px;font-size:13.5px;color:var(--ink);min-width:0;width:100%;
+  background:var(--bg);border:1px solid var(--line);box-shadow:var(--shadow-in);
+  font-family:'Outfit',sans-serif;outline:none;font-variant-numeric:tabular-nums;
+}
+.tkline input:focus{border-color:rgba(232,207,160,.45)}
+.tkline .rm{background:none;border:none;color:var(--danger);font-size:15px;cursor:pointer;padding:4px}
+.tkline-head{display:grid;grid-template-columns:1fr 52px 64px 64px 30px;gap:6px;font-size:10px;
+  letter-spacing:.6px;text-transform:uppercase;color:var(--ink-dim);margin:8px 0 6px}
+.tk-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tk-three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.tk-preview{width:100%;max-height:160px;object-fit:contain;border-radius:14px;border:1px solid var(--line);margin-bottom:12px;background:var(--bg)}
+.btn-ghost{background:transparent;border:1px dashed rgba(232,207,160,.35);box-shadow:none;color:var(--gold);width:100%;padding:11px;border-radius:12px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600}
+.tk-warn{font-size:12.5px;color:var(--danger);margin:6px 0 0;min-height:16px}
+select.sel-cat{
+  width:100%;padding:13px 14px;border-radius:14px;font-size:15px;color:var(--ink);
+  background:var(--bg);border:1px solid var(--line);box-shadow:var(--shadow-in);
+  font-family:inherit;outline:none;appearance:none;
+}
+.chk{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink-dim);margin:12px 0}
+.chk input{width:18px;height:18px;accent-color:var(--gold-deep)}
+
+/* Historial de tickets */
+.tkrow{border-bottom:1px solid var(--line);padding:12px 2px}
+.tkrow:last-child{border-bottom:none}
+.tkrow .head{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.tkrow .store{font-size:14.5px;font-weight:600}
+.tkrow .meta{font-size:12px;color:var(--ink-dim);margin-top:2px}
+.tkrow .tot{font-family:'Fraunces',serif;font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums}
+.tkrow .lines{display:none;margin-top:10px;font-size:13px;color:var(--ink-dim)}
+.tkrow.open .lines{display:block}
+.tkrow .lines div{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed rgba(232,207,160,.08)}
+.tkrow .del{background:none;border:none;color:var(--danger);font-size:13px;cursor:pointer;margin-left:12px;padding:6px}
+
+/* Análisis */
+.ai-out{font-size:14px;color:var(--ink);line-height:1.6;white-space:pre-wrap;margin-top:14px;
+  background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow-in);
+  max-height:45vh;overflow-y:auto;display:none}
+.ai-out.show{display:block}
+.qrow{display:flex;gap:8px;margin-top:12px}
+.qrow input{flex:1;min-width:0;padding:13px 14px;border-radius:14px;font-size:15px;color:var(--ink);
+  background:var(--bg);border:1px solid var(--line);box-shadow:var(--shadow-in);font-family:inherit;outline:none}
+.qrow .btn{width:52px;flex:none;border-radius:14px;font-size:17px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:var(--shadow-in)}
+.stat small{font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-dim);display:block}
+.stat b{font-family:'Fraunces',serif;font-size:16px;color:var(--gold);font-weight:600}
+.stat span{font-size:12px;color:var(--ink-dim)}
 .toast{
   position:fixed;top:18px;left:50%;transform:translate(-50%,-90px);z-index:60;
   background:linear-gradient(150deg,#F3DFB4,var(--gold-deep));color:#241C08;
@@ -294,9 +353,20 @@ header{padding:26px 22px 6px;display:flex;align-items:flex-end;justify-content:s
 <section class="cats" id="cats"></section>
 
 <section class="ai-card">
-  <h3>✦ Consejo del mes · IA</h3>
-  <p id="aiText">Al terminar el mes, pídeme un consejo personalizado para ahorrar más basado en tus gastos reales.</p>
-  <button class="btn btn-gold" id="aiBtn">Pedir consejo a Gemini</button>
+  <h3>🧾 Tickets</h3>
+  <p style="font-size:13.5px;color:var(--ink-dim);margin-top:6px;line-height:1.5">Fotografía el ticket del súper: la IA lee productos, precios e IVA y va creando tu base de datos de precios.</p>
+  <div class="tk-stats">
+    <div><b id="stTk">0</b>tickets</div>
+    <div><b id="stTkTotal">0 €</b>gastado</div>
+    <div><b id="stProds">0</b>productos</div>
+  </div>
+  <div class="tk-actions">
+    <button class="btn btn-gold" id="scanBtn">📷 Escanear ticket</button>
+    <button class="btn" id="histBtn">🗂 Historial</button>
+    <button class="btn" id="anaBtn">✦ Analizar con IA</button>
+    <button class="btn" id="pdfBtn" style="grid-column:1 / -1">📄 Generar PDF</button>
+  </div>
+  <input type="file" id="tkFile" accept="image/*" hidden>
 </section>
 
 <section class="movs-card">
@@ -342,10 +412,67 @@ header{padding:26px 22px 6px;display:flex;align-items:flex-end;justify-content:s
     <label>API key de Gemini</label>
     <input type="password" id="apiKey" placeholder="Pega aquí tu clave de Google AI Studio" autocomplete="off">
   </div>
-  <p class="hint">Consíguela gratis en <b>aistudio.google.com</b> → “Get API key”.</p>
+  <p class="hint">Se usa para leer los tickets (OCR) y para los informes. Consíguela gratis en <b>aistudio.google.com</b> → “Get API key”.</p>
 
   <button class="btn btn-gold" id="settingsSave">Guardar</button>
   <div class="sync-status" id="syncStatus"></div>
+</div>
+
+<!-- Sheet: revisar ticket escaneado -->
+<div class="sheet" id="sheetTicket">
+  <div class="grip"></div>
+  <h2>Revisar ticket</h2>
+  <img id="tkPreview" class="tk-preview" alt="Ticket" hidden>
+  <div class="tk-two">
+    <div class="field"><label>Comercio</label><input type="text" id="tkStore" placeholder="Mercadona"></div>
+    <div class="field"><label>Fecha</label><input type="date" id="tkDate"></div>
+  </div>
+  <h4>Productos</h4>
+  <div class="tkline-head"><span>Producto</span><span>Cant.</span><span>€/ud</span><span>Total</span><span></span></div>
+  <div id="tkLines"></div>
+  <button class="btn-ghost" id="tkAddLine">＋ Añadir línea</button>
+  <div class="tk-three" style="margin-top:14px">
+    <div class="field"><label>Descuento €</label><input type="text" inputmode="decimal" id="tkDisc" placeholder="0"></div>
+    <div class="field"><label>IVA €</label><input type="text" inputmode="decimal" id="tkTax" placeholder="0"></div>
+    <div class="field"><label>Total €</label><input type="text" inputmode="decimal" id="tkTotal" placeholder="0,00"></div>
+  </div>
+  <p class="tk-warn" id="tkWarn"></p>
+  <label class="chk"><input type="checkbox" id="tkAsExpense" checked> Añadir el total como gasto en:</label>
+  <select class="sel-cat" id="tkCat"></select>
+  <button class="btn btn-gold" id="tkSave">Guardar ticket</button>
+</div>
+
+<!-- Sheet: historial de tickets -->
+<div class="sheet" id="sheetHist">
+  <div class="grip"></div>
+  <h2>Historial de tickets</h2>
+  <div id="histList"></div>
+  <button class="btn-ghost" id="histMore" style="margin-top:10px" hidden>Cargar más</button>
+</div>
+
+<!-- Sheet: análisis IA -->
+<div class="sheet" id="sheetAna">
+  <div class="grip"></div>
+  <h2>Análisis de gastos</h2>
+  <div class="stat-grid" id="anaStats"></div>
+  <button class="btn btn-gold" id="anaRun" style="margin-top:14px">✦ Generar informe con IA</button>
+  <div class="qrow">
+    <input type="text" id="anaQ" placeholder="Pregunta: ¿cuánto gasto en Coca-Cola?">
+    <button class="btn" id="anaAsk">➤</button>
+  </div>
+  <div class="ai-out" id="anaOut"></div>
+</div>
+
+<!-- Sheet: PDF listo -->
+<div class="sheet" id="sheetPdf">
+  <div class="grip"></div>
+  <h2>Informe PDF</h2>
+  <p class="hint" id="pdfInfo">Informe generado con el resumen general y todos los productos fusionados.</p>
+  <div class="tk-three">
+    <button class="btn" id="pdfShare" style="padding:14px">📤 Compartir</button>
+    <button class="btn" id="pdfDown" style="padding:14px">⬇ Descargar</button>
+    <button class="btn" id="pdfPrint" style="padding:14px">🖨 Imprimir</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -393,14 +520,19 @@ const EMOJIS=['🐾','⛽','💊','📱','🎮','✈️','🚗','📚','💇','�
 
 let state=loadLocal();
 function loadLocal(){
+  let s=null;
   try{
-    const s=JSON.parse(localStorage.getItem(LS_KEY));
-    if(s&&s.cats)return s;
-    // migrar de la versión anterior si existía
-    const old=JSON.parse(localStorage.getItem('hogar_gastos_v1'));
-    if(old&&old.cats)return old;
+    s=JSON.parse(localStorage.getItem(LS_KEY));
+    if(!s||!s.cats){
+      const old=JSON.parse(localStorage.getItem('hogar_gastos_v1'));
+      if(old&&old.cats)s=old;
+    }
   }catch(e){}
-  return {cats:[...DEFAULT_CATS],expenses:[]};
+  if(!s||!s.cats)s={cats:[...DEFAULT_CATS],expenses:[]};
+  if(!Array.isArray(s.expenses))s.expenses=[];
+  if(!Array.isArray(s.tickets))s.tickets=[];
+  if(!Array.isArray(s.products))s.products=[];
+  return s;
 }
 function saveLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}}
 
@@ -441,56 +573,105 @@ function setCloud(status){ // 'off' | 'on' | 'err'
   cloudDot.title=status==='on'?'Nube sincronizada':status==='err'?'Error de nube (datos guardados en el móvil)':'Nube no configurada';
 }
 
-/* Cola de operaciones pendientes (si la nube falla, se reintenta después) */
+/* ===== Lápidas (tombstones): ids borrados que NUNCA deben resucitar ===== */
+function getTomb(){try{return JSON.parse(localStorage.getItem('sb_tomb'))||{}}catch(e){return{}}}
+function setTomb(t){localStorage.setItem('sb_tomb',JSON.stringify(t))}
+function addTomb(id){const t=getTomb();t[String(id)]=Date.now();setTomb(t);}
+function pruneTomb(){ // limpiar lápidas de más de 90 días
+  const t=getTomb(),lim=Date.now()-90*24*3600*1000;let ch=false;
+  for(const k in t){if(t[k]<lim){delete t[k];ch=true;}}
+  if(ch)setTomb(t);
+}
+
+/* ===== Cola de operaciones WRITE-AHEAD =====
+   Toda operación se guarda en la cola ANTES de intentarla contra la nube.
+   Así, aunque cierres la app a mitad, la operación sobrevive y se
+   reintenta al abrir. Cada op es idempotente (upsert / delete por id). */
 function getPending(){try{return JSON.parse(localStorage.getItem('sb_pending'))||[]}catch(e){return[]}}
 function setPending(q){localStorage.setItem('sb_pending',JSON.stringify(q))}
-function queueOp(op){const q=getPending();q.push(op);setPending(q);}
 async function runOp(op){
-  if(op.t==='iexp')return sb('gastos_casa',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(op.d)});
+  const UP={'Prefer':'resolution=merge-duplicates'};
+  if(op.t==='iexp')return sb('gastos_casa',{method:'POST',headers:UP,body:JSON.stringify(op.d)});
   if(op.t==='dexp')return sb('gastos_casa?id=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
-  if(op.t==='icat')return sb('apartados_casa',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(op.d)});
+  if(op.t==='icat')return sb('apartados_casa',{method:'POST',headers:UP,body:JSON.stringify(op.d)});
   if(op.t==='dcat'){
     await sb('gastos_casa?apartado=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
     return sb('apartados_casa?id=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
   }
+  if(op.t==='itk')return sb('tickets_casa',{method:'POST',headers:UP,body:JSON.stringify(op.d)});
+  if(op.t==='dtk')return sb('tickets_casa?id=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
+  if(op.t==='uprod')return sb('productos_casa',{method:'POST',headers:UP,body:JSON.stringify(op.d)});
+  if(op.t==='dprodall')return sb('productos_casa?id=neq.__none__',{method:'DELETE'});
 }
-async function flushPending(){
-  let q=getPending();
-  while(q.length){
-    await runOp(q[0]);   // si falla, lanza y se queda en cola
-    q.shift();setPending(q);
-  }
+let _flushP=null;
+function flushPending(){
+  if(_flushP)return _flushP; // evita flushes concurrentes (online + visibilitychange a la vez)
+  _flushP=(async()=>{
+    let q=getPending();
+    while(q.length){
+      await runOp(q[0]);          // si falla, lanza: la op se queda en cola
+      q=getPending();q.shift();setPending(q);
+    }
+  })().finally(()=>{_flushP=null;});
+  return _flushP;
 }
-/* Ejecuta una operación en la nube; si falla, la deja en cola para reintentar */
+function markAllSynced(){ // solo cuando la cola quedó vacía: todo lo local está en la nube
+  if(getPending().length)return;
+  let ch=false;
+  (state.expenses||[]).forEach(e=>{if(e.syn!==true){e.syn=true;ch=true;}});
+  (state.tickets||[]).forEach(t=>{if(t.syn!==true){t.syn=true;ch=true;}});
+  if(ch)saveLocal();
+}
 function cloudOp(op){
   if(!sbConf())return;
-  runOp(op).then(()=>setCloud('on')).catch(()=>{
-    queueOp(op);setCloud('err');
+  const q=getPending();q.push(op);setPending(q); // primero a la cola (durable)
+  flushPending().then(()=>{setCloud('on');markAllSynced();}).catch(()=>{
+    setCloud('err');
     toast('Sin nube ahora mismo: se reintentará solo');
   });
 }
 
-/* Carga desde la nube FUSIONANDO: nada local se pierde */
+/* Carga desde la nube.
+   Reglas anti-resurrección:
+   1) Antes de leer, se vacía la cola pendiente (incluye DELETEs de sesiones anteriores).
+   2) Lo que llegue de la nube se filtra contra las lápidas locales.
+   3) Solo se re-sube lo local marcado como NO sincronizado (syn!==true):
+      un gasto creado aquí y aún sin subir. Lo que vino de la nube alguna vez
+      jamás se re-sube, así un borrado hecho en otro dispositivo no revive. */
 async function pullCloud(){
   if(!sbConf()){setCloud('off');return;}
   try{
-    await flushPending(); // primero, lo que quedó pendiente
-    const [cats,exps]=await Promise.all([
+    pruneTomb();
+    await flushPending();
+    const tomb=getTomb();
+    const [cats,exps,tks]=await Promise.all([
       sb('apartados_casa?select=*',{headers:{'Prefer':'return=representation'}}),
-      sb('gastos_casa?select=*&order=fecha.desc&limit=2000',{headers:{'Prefer':'return=representation'}})
+      sb('gastos_casa?select=*&order=fecha.desc&limit=5000',{headers:{'Prefer':'return=representation'}}),
+      sb('tickets_casa?select=*&order=fecha.desc&limit=5000',{headers:{'Prefer':'return=representation'}}).catch(()=>[]) // tabla puede no existir aún
     ]);
-    const cloudExps=(exps||[]).map(e=>({id:e.id,cat:e.apartado,amount:Number(e.importe),date:e.fecha}));
+    const cloudExps=(exps||[]).filter(e=>!tomb[String(e.id)])
+      .map(e=>({id:String(e.id),cat:e.apartado,amount:Number(e.importe),date:e.fecha,syn:true}));
     const cloudCats=(cats||[]).map(c=>({id:c.id,name:c.nombre,emoji:c.emoji,color:c.color}));
+    const cloudTks=(tks||[]).filter(t=>!tomb[String(t.id)])
+      .map(t=>({id:String(t.id),store:t.comercio||'',date:t.fecha||'',total:Number(t.total)||0,
+        discount:Number(t.descuento)||0,tax:Number(t.iva)||0,
+        lines:Array.isArray(t.lineas)?t.lineas:[],created:t.creado,syn:true}));
 
-    // Gastos locales que la nube no tiene → subirlos (escrituras perdidas)
-    const cloudIds=new Set(cloudExps.map(e=>String(e.id)));
-    const missingExps=state.expenses.filter(e=>!cloudIds.has(String(e.id)));
+    // Subir SOLO lo local nuevo sin sincronizar (y sin lápida)
+    const cloudIds=new Set(cloudExps.map(e=>e.id));
+    const missingExps=state.expenses.filter(e=>e.syn!==true&&!cloudIds.has(String(e.id))&&!tomb[String(e.id)]);
     if(missingExps.length){
       await sb('gastos_casa',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},
         body:JSON.stringify(missingExps.map(e=>({id:String(e.id),apartado:e.cat,importe:e.amount,fecha:e.date})))});
-      cloudExps.push(...missingExps);
+      missingExps.forEach(e=>{e.syn=true;cloudExps.push(e);});
     }
-    // Apartados personalizados locales que faltan en la nube → subirlos
+    const cloudTkIds=new Set(cloudTks.map(t=>t.id));
+    const missingTks=state.tickets.filter(t=>t.syn!==true&&!cloudTkIds.has(String(t.id))&&!tomb[String(t.id)]);
+    if(missingTks.length){
+      await sb('tickets_casa',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify(missingTks.map(tkRow))}).catch(()=>{});
+      missingTks.forEach(t=>{t.syn=true;cloudTks.push(t);});
+    }
     const cloudCatIds=new Set(cloudCats.map(c=>c.id));
     const missingCats=state.cats.filter(c=>!DEFAULT_CATS.some(d=>d.id===c.id)&&!cloudCatIds.has(c.id));
     if(missingCats.length){
@@ -503,10 +684,14 @@ async function pullCloud(){
     cloudCats.forEach(c=>{if(!merged.some(m=>m.id===c.id))merged.push(c);});
     state.cats=merged;
     state.expenses=cloudExps;
+    state.tickets=cloudTks;
+    rebuildProducts();
     saveLocal();
     setCloud('on');renderAll();
   }catch(e){setCloud(sbConf()?'err':'off');}
 }
+const tkRow=t=>({id:String(t.id),comercio:t.store,fecha:t.date||null,total:t.total,
+  descuento:t.discount||0,iva:t.tax||0,lineas:t.lines});
 
 /* ================= Añadir gasto desde la tarjeta ================= */
 function addExpense(catId, inputEl){
@@ -515,7 +700,10 @@ function addExpense(catId, inputEl){
   if(!amt||amt<=0){toast('Pon un importe válido');inputEl.focus();return;}
   const now=new Date();
   const d=(monthKey(view)===monthKey(now))?now:new Date(view.getFullYear(),view.getMonth(),15);
-  const exp={id:uid(),cat:catId,amount:Math.round(amt*100)/100,date:d.toISOString()};
+  // Guardia anti doble pulsación (＋ y Enter a la vez, o toque repetido)
+  if(Date.now()-_lastAdd.t<1500&&_lastAdd.cat===catId&&_lastAdd.amt===amt){toast('Ese gasto ya se añadió');inputEl.value='';return;}
+  _lastAdd={t:Date.now(),cat:catId,amt};
+  const exp={id:uid(),cat:catId,amount:Math.round(amt*100)/100,date:d.toISOString(),syn:false};
   state.expenses.push(exp);
   saveLocal();
   cloudOp({t:'iexp',d:{id:exp.id,apartado:exp.cat,importe:exp.amount,fecha:exp.date}});
@@ -523,8 +711,11 @@ function addExpense(catId, inputEl){
   renderAll();
   toast('Gasto guardado ✓');
 }
+let _lastAdd={t:0,cat:'',amt:0};
 function deleteExpense(id){
+  if(!confirm('¿Eliminar este gasto definitivamente?'))return;
   state.expenses=state.expenses.filter(x=>x.id!==id);
+  addTomb(id);       // lápida: aunque la nube tarde, no volverá a entrar
   saveLocal();
   cloudOp({t:'dexp',id:id});
   renderAll();toast('Gasto eliminado');
@@ -594,7 +785,9 @@ function renderCats(){
       el.querySelector('.delcat').onclick=()=>{
         if(confirm('¿Eliminar "'+c.name+'" y todos sus gastos?')){
           state.cats=state.cats.filter(x=>x.id!==c.id);
+          state.expenses.filter(x=>x.cat===c.id).forEach(x=>addTomb(x.id));
           state.expenses=state.expenses.filter(x=>x.cat!==c.id);
+          addTomb(c.id);
           saveLocal();
           cloudOp({t:'dcat',id:c.id});
           renderAll();
@@ -702,31 +895,432 @@ document.getElementById('settingsSave').onclick=async()=>{
 document.getElementById('prevMonth').onclick=()=>{view.setMonth(view.getMonth()-1);renderAll();};
 document.getElementById('nextMonth').onclick=()=>{view.setMonth(view.getMonth()+1);renderAll();};
 
-/* ================= Consejo IA (Gemini) ================= */
-document.getElementById('aiBtn').onclick=async()=>{
+/* ================= Gemini (llamada común) ================= */
+async function gemini(parts,json=true){
   const key=localStorage.getItem('gemini_key');
-  const out=document.getElementById('aiText');
-  if(!key){openSheet('sheetSettings');toast('Primero pega tu API key de Gemini');return;}
-  const totals=totalsByCat();
-  const total=Object.values(totals).reduce((a,b)=>a+b,0);
-  if(total===0){out.textContent='Todavía no hay gastos este mes. Añade algunos y vuelve a pedirme consejo.';return;}
-  const resumen=state.cats.filter(c=>totals[c.id]>0)
-    .map(c=>`- ${c.name}: ${totals[c.id].toFixed(2)} € (${Math.round(totals[c.id]/total*100)}%)`).join('\n');
-  const btn=document.getElementById('aiBtn');
-  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Analizando tus gastos…';
-  try{
-    const prompt=`Eres un asesor de finanzas domésticas cercano y práctico. Estos son mis gastos de ${monthName(view)} (total ${total.toFixed(2)} €):\n${resumen}\n\nDame en español un consejo breve y concreto (máx. 120 palabras) para ahorrar más el mes que viene: señala la categoría donde más margen de ahorro veo y 2-3 acciones prácticas. Sin listas con asteriscos, tono cercano.`;
-    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
-    });
-    const data=await r.json();
-    const txt=data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    out.textContent=txt||('No pude generar el consejo. '+(data?.error?.message||'Revisa tu API key.'));
-  }catch(e){
-    out.textContent='Error de conexión con Gemini. Comprueba tu internet y tu API key.';
+  if(!key){openSheet('sheetSettings');toast('Primero pega tu API key de Gemini');throw new Error('sin-key');}
+  const body={contents:[{parts}],generationConfig:{temperature:0}};
+  if(json)body.generationConfig.response_mime_type='application/json';
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data=await r.json();
+  const txt=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('');
+  if(!txt)throw new Error(data?.error?.message||'Respuesta vacía de Gemini');
+  return txt;
+}
+/* Extraer JSON con llaves balanceadas (tolera texto alrededor o fences) */
+function extractJSON(s){
+  s=s.replace(/```json|```/g,'');
+  const i=s.indexOf('{');if(i<0)throw new Error('sin JSON');
+  let d=0,str=false,esc=false;
+  for(let j=i;j<s.length;j++){
+    const ch=s[j];
+    if(esc){esc=false;continue;}
+    if(ch==='\\'&&str){esc=true;continue;}
+    if(ch==='"')str=!str;
+    if(!str){if(ch==='{')d++;else if(ch==='}'){d--;if(d===0)return JSON.parse(s.slice(i,j+1));}}
   }
-  btn.disabled=false;btn.textContent='Pedir consejo a Gemini';
+  throw new Error('JSON incompleto');
+}
+const num=v=>{const n=parseFloat(String(v??'').replace(',','.'));return isFinite(n)?Math.round(n*100)/100:0;};
+
+/* ================= Base de datos de productos =================
+   Los productos se DERIVAN siempre de los tickets (fuente única de verdad):
+   así nunca hay desajustes entre dispositivos ni acumulados corruptos.
+   La tabla productos_casa de Supabase se actualiza como copia consultable. */
+const normName=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[^a-z0-9ñ%,. ]/g,' ').replace(/\s+/g,' ').trim();
+function h36(s){let h=5381;for(let i=0;i<s.length;i++)h=(((h<<5)+h)+s.charCodeAt(i))>>>0;return h.toString(36);}
+function bigrams(s){const m=new Map();for(let i=0;i<s.length-1;i++){const g=s.slice(i,i+2);m.set(g,(m.get(g)||0)+1);}return m;}
+/* Palabras que distinguen variantes reales: si una las tiene y la otra no,
+   NO son el mismo producto (Coca-Cola vs Coca-Cola Zero, leche entera vs desnatada) */
+const VARIANT_WORDS=new Set(['zero','light','sin','integral','desnatada','desnatado','semidesnatada','semi','entera','entero','0','bio','eco','ecologico','congelado','congelada','fresco','fresca','natural','azucar']);
+function variantClash(a,b){
+  const ta=new Set(a.split(' ')),tb=new Set(b.split(' '));
+  for(const v of VARIANT_WORDS)if(ta.has(v)!==tb.has(v))return true;
+  return false;
+}
+const STOP_WORDS=new Set(['de','del','la','el','los','las','con','y','en','x','pack','uds','ud']);
+const isSizeTok=t=>/^x?\d+([.,]\d+)?[a-z]{0,3}$/.test(t)||t.length<2;
+const contentTokens=n=>n.split(' ').filter(t=>!STOP_WORDS.has(t)&&!isSizeTok(t));
+function tokCovered(t,oth,othJoined){
+  if(othJoined.includes(t))return true;
+  for(const o of oth)if(o.length>=4&&t.length>=4&&(o.startsWith(t)||t.startsWith(o)))return true;
+  return false;
+}
+/* Ambos nombres tienen palabras de contenido que el otro no cubre →
+   son productos distintos (frito/triturado, pollo/pavo) aunque se parezcan */
+function contentClash(a,b){
+  const ta=contentTokens(a),tb=contentTokens(b);
+  if(!ta.length||!tb.length)return false;
+  const ja=ta.join(''),jb=tb.join('');
+  return ta.some(t=>!tokCovered(t,tb,jb))&&tb.some(t=>!tokCovered(t,ta,ja));
+}
+function nameSim(a,b){
+  if(a===b)return 1;
+  if(variantClash(a,b))return .5;
+  if(contentClash(a,b))return .5;
+  if(a.length>4&&b.length>4&&(a.includes(b)||b.includes(a)))return .9;
+  const ta=new Set(a.split(' ')),tb=new Set(b.split(' '));
+  let it=0;ta.forEach(t=>{if(tb.has(t))it++;});
+  const tok=2*it/(ta.size+tb.size);
+  const A=bigrams(a),B=bigrams(b);let ib=0,na=0,nb=0;
+  A.forEach((v,k)=>{na+=v;if(B.has(k))ib+=Math.min(v,B.get(k));});B.forEach(v=>nb+=v);
+  const big=(na+nb)?2*ib/(na+nb):0;
+  return Math.max(tok,big);
+}
+function matchProduct(name,list,idx){
+  const n=normName(name);if(!n)return null;
+  if(idx&&idx.has(n))return idx.get(n);       // atajo O(1) para nombres ya vistos
+  let best=null,bs=0;
+  for(const p of list){
+    const s=nameSim(n,p.norm);
+    if(s>bs){bs=s;best=p;}
+  }
+  return bs>=0.74?best:null;
+}
+function rebuildProducts(){
+  const list=[],idx=new Map(); // idx: norma exacta (nombre o alias) → producto
+  const tks=[...state.tickets].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  for(const t of tks){
+    for(const l of (t.lines||[])){
+      const name=(l.nombre||l.name||'').trim();if(!name)continue;
+      const qty=num(l.cantidad??l.qty)||1;
+      const lineTotal=num(l.total)|| (num(l.precio_unitario??l.unit)*qty);
+      const unit=qty?lineTotal/qty:lineTotal;
+      let p=matchProduct(name,list,idx);
+      if(!p){
+        const norm=normName(name);
+        p={id:'p'+h36(norm),name,norm,aliases:[],aliasNorm:[],qty:0,spent:0,buys:0,last:'',lastStore:'',hist:[]};
+        list.push(p);idx.set(norm,p);
+      }else if(normName(name)!==p.norm&&!p.aliasNorm.includes(normName(name))){
+        p.aliases.push(name);p.aliasNorm.push(normName(name));idx.set(normName(name),p);
+        if(name.length>p.name.length)p.name=name; // el nombre más descriptivo gana
+      }
+      p.qty=Math.round((p.qty+qty)*1000)/1000;
+      p.spent=Math.round((p.spent+lineTotal)*100)/100;
+      p.buys++;
+      if(String(t.date)>=String(p.last||'')){p.last=t.date;p.lastStore=t.store;}
+      p.hist.push({d:t.date,store:t.store,unit:Math.round(unit*10000)/10000,qty,tid:t.id});
+      if(p.hist.length>60)p.hist.shift();
+    }
+  }
+  state.products=list.sort((a,b)=>b.spent-a.spent);
+}
+function pushProducts(ticketId){ // sube a Supabase solo los productos tocados por ese ticket
+  if(!sbConf())return;
+  const rows=state.products
+    .filter(p=>!ticketId||p.hist.some(h=>h.tid===ticketId))
+    .map(p=>({id:p.id,nombre:p.name,alias:p.aliases,cantidad:p.qty,gasto:p.spent,compras:p.buys,
+      precio_medio:p.qty?Math.round(p.spent/p.qty*10000)/10000:0,
+      ultima_compra:p.last||null,ultima_tienda:p.lastStore||null,historial:p.hist,
+      actualizado:new Date().toISOString()}));
+  if(rows.length)cloudOp({t:'uprod',d:rows});
+}
+
+/* ================= Escanear ticket (OCR con IA) ================= */
+const tkFile=document.getElementById('tkFile');
+let draftImg=null;
+document.getElementById('scanBtn').onclick=()=>{
+  if(!localStorage.getItem('gemini_key')){openSheet('sheetSettings');toast('Pega tu API key de Gemini para leer tickets');return;}
+  tkFile.value='';tkFile.click();
+};
+tkFile.onchange=async()=>{
+  const f=tkFile.files&&tkFile.files[0];if(!f)return;
+  const btn=document.getElementById('scanBtn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Leyendo ticket…';
+  try{
+    const b64=await imgToB64(f);
+    draftImg='data:image/jpeg;base64,'+b64;
+    const known=state.products.slice(0,250).map(p=>p.name);
+    const prompt=`Eres un sistema OCR experto en tickets de compra de supermercados españoles (Mercadona, Carrefour, Lidl, Aldi, Dia, Amazon...).
+Lee el ticket de la imagen y devuelve SOLO un objeto JSON con este esquema exacto:
+{"comercio":"nombre de la tienda","fecha":"YYYY-MM-DD","lineas":[{"nombre":"producto","cantidad":1,"precio_unitario":0.00,"total":0.00}],"descuento":0.00,"iva":0.00,"total":0.00}
+Reglas:
+- "nombre": limpio y legible (ej. "Coca-Cola Zero 2L", no "CC ZERO 2L PET"). Si coincide con uno de esta lista de productos ya conocidos, usa EXACTAMENTE ese nombre: ${JSON.stringify(known)}
+- "cantidad": unidades o kg (número). Si es peso, usa los kg y precio_unitario = €/kg.
+- "total" de cada línea: importe final de esa línea con descuentos de línea aplicados.
+- "descuento": suma de descuentos globales del ticket (número positivo, 0 si no hay).
+- "iva": total de IVA si aparece desglosado, 0 si no.
+- "total": importe final pagado.
+- "fecha": la del ticket; si no se lee, "".
+- No inventes productos: si una línea es ilegible, omítela.`;
+    const txt=await gemini([{inline_data:{mime_type:'image/jpeg',data:b64}},{text:prompt}]);
+    const d=extractJSON(txt);
+    openTicketReview({
+      store:d.comercio||'',date:(d.fecha&&/^\d{4}-\d{2}-\d{2}$/.test(d.fecha))?d.fecha:new Date().toISOString().slice(0,10),
+      lines:(Array.isArray(d.lineas)?d.lineas:[]).map(l=>({nombre:String(l.nombre||'').trim(),cantidad:num(l.cantidad)||1,
+        precio_unitario:num(l.precio_unitario),total:num(l.total)||num(l.precio_unitario)*(num(l.cantidad)||1)})),
+      discount:num(d.descuento),tax:num(d.iva),total:num(d.total)
+    });
+  }catch(e){
+    toast(e.message==='sin-key'?'Falta la API key de Gemini':'No pude leer el ticket: '+(e.message||'inténtalo con más luz'));
+  }
+  btn.disabled=false;btn.textContent='📷 Escanear ticket';
+};
+function imgToB64(file){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=1600,sc=Math.min(1,MAX/Math.max(img.width,img.height));
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      URL.revokeObjectURL(img.src); // sin fugas de memoria
+      res(cv.toDataURL('image/jpeg',.85).split(',')[1]);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(img.src);rej(new Error('imagen no válida'));};
+    img.src=URL.createObjectURL(file);
+  });
+}
+
+/* ---- Revisión y corrección manual del ticket ---- */
+let draft=null;
+function openTicketReview(t,existingId){
+  draft={...t,id:existingId||('tk'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36))};
+  document.getElementById('tkStore').value=t.store;
+  document.getElementById('tkDate').value=t.date;
+  document.getElementById('tkDisc').value=t.discount||'';
+  document.getElementById('tkTax').value=t.tax||'';
+  document.getElementById('tkTotal').value=t.total?String(t.total):'';
+  const prev=document.getElementById('tkPreview');
+  if(draftImg&&!existingId){prev.src=draftImg;prev.hidden=false;}else{prev.hidden=true;}
+  const sel=document.getElementById('tkCat');
+  sel.innerHTML=state.cats.map(c=>`<option value="${c.id}"${c.id==='comida'?' selected':''}>${c.emoji} ${c.name}</option>`).join('');
+  document.getElementById('tkAsExpense').checked=!existingId;
+  renderDraftLines();
+  openSheet('sheetTicket');
+}
+function renderDraftLines(){
+  const box=document.getElementById('tkLines');box.innerHTML='';
+  draft.lines.forEach((l,i)=>{
+    const row=document.createElement('div');row.className='tkline';
+    row.innerHTML=`<input type="text" value="${(l.nombre||'').replace(/"/g,'&quot;')}" aria-label="Producto">
+      <input type="text" inputmode="decimal" value="${l.cantidad??''}" aria-label="Cantidad">
+      <input type="text" inputmode="decimal" value="${l.precio_unitario??''}" aria-label="Precio unidad">
+      <input type="text" inputmode="decimal" value="${l.total??''}" aria-label="Total línea">
+      <button class="rm" aria-label="Quitar línea">✕</button>`;
+    const [n,q,u,tt]=row.querySelectorAll('input');
+    n.oninput=()=>l.nombre=n.value;
+    q.oninput=()=>{l.cantidad=num(q.value);l.total=Math.round(l.cantidad*num(u.value)*100)/100;tt.value=l.total||'';checkTotals();};
+    u.oninput=()=>{l.precio_unitario=num(u.value);l.total=Math.round((num(q.value)||1)*l.precio_unitario*100)/100;tt.value=l.total||'';checkTotals();};
+    tt.oninput=()=>{l.total=num(tt.value);checkTotals();};
+    row.querySelector('.rm').onclick=()=>{draft.lines.splice(i,1);renderDraftLines();checkTotals();};
+    box.appendChild(row);
+  });
+  checkTotals();
+}
+document.getElementById('tkAddLine').onclick=()=>{draft.lines.push({nombre:'',cantidad:1,precio_unitario:0,total:0});renderDraftLines();};
+['tkDisc','tkTax','tkTotal'].forEach(id=>document.getElementById(id).addEventListener('input',checkTotals));
+function checkTotals(){
+  if(!draft)return;
+  const sum=draft.lines.reduce((a,l)=>a+num(l.total),0)-num(document.getElementById('tkDisc').value);
+  const tot=num(document.getElementById('tkTotal').value);
+  const w=document.getElementById('tkWarn');
+  w.textContent=(tot&&Math.abs(sum-tot)>0.05)?`⚠ Las líneas suman ${fmtEUR(Math.round(sum*100)/100)} y el total dice ${fmtEUR(tot)}. Revisa por si el OCR falló en alguna.`:'';
+}
+document.getElementById('tkSave').onclick=()=>{
+  if(!draft)return;
+  const lines=draft.lines.filter(l=>(l.nombre||'').trim());
+  if(!lines.length){toast('El ticket necesita al menos un producto');return;}
+  const t={
+    id:draft.id,
+    store:document.getElementById('tkStore').value.trim()||'Comercio',
+    date:document.getElementById('tkDate').value||new Date().toISOString().slice(0,10),
+    discount:num(document.getElementById('tkDisc').value),
+    tax:num(document.getElementById('tkTax').value),
+    total:num(document.getElementById('tkTotal').value)||Math.round(lines.reduce((a,l)=>a+num(l.total),0)*100)/100,
+    lines:lines.map(l=>({nombre:l.nombre.trim(),cantidad:num(l.cantidad)||1,precio_unitario:num(l.precio_unitario),total:num(l.total)})),
+    created:new Date().toISOString(),syn:false
+  };
+  const idx=state.tickets.findIndex(x=>x.id===t.id);
+  if(idx>=0)state.tickets[idx]=t;else state.tickets.push(t);
+  rebuildProducts();
+  saveLocal();
+  cloudOp({t:'itk',d:tkRow(t)});
+  pushProducts(t.id);
+  if(document.getElementById('tkAsExpense').checked&&idx<0){
+    const cat=document.getElementById('tkCat').value;
+    const exp={id:'g-'+t.id,cat,amount:t.total,date:new Date(t.date+'T12:00:00').toISOString(),syn:false};
+    state.expenses.push(exp);saveLocal();
+    cloudOp({t:'iexp',d:{id:exp.id,apartado:exp.cat,importe:exp.amount,fecha:exp.date}});
+  }
+  draft=null;draftImg=null;
+  closeSheet();renderAll();
+  toast('Ticket guardado ✓ '+t.lines.length+' productos');
+};
+
+/* ---- Historial de tickets ---- */
+let histShown=100;
+document.getElementById('histBtn').onclick=()=>{histShown=100;renderHist();openSheet('sheetHist');};
+document.getElementById('histMore').onclick=()=>{histShown+=100;renderHist();};
+function renderHist(){
+  const box=document.getElementById('histList');
+  const tks=[...state.tickets].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  if(!tks.length){box.innerHTML='<div class="mov-empty">Aún no hay tickets. Pulsa “Escanear ticket” para empezar.</div>';document.getElementById('histMore').hidden=true;return;}
+  box.innerHTML='';
+  tks.slice(0,histShown).forEach(t=>{
+    const row=document.createElement('div');row.className='tkrow';
+    const d=t.date?new Date(t.date+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'}):'';
+    row.innerHTML=`<div class="head">
+        <div><div class="store">🧾 ${t.store}</div><div class="meta">${d} · ${(t.lines||[]).length} productos</div></div>
+        <div style="display:flex;align-items:center"><span class="tot">${fmtEUR(t.total)}</span><button class="del" aria-label="Eliminar ticket">🗑</button></div>
+      </div>
+      <div class="lines">${(t.lines||[]).map(l=>`<div><span>${l.cantidad}× ${l.nombre}</span><span>${fmtEUR(num(l.total))}</span></div>`).join('')}
+        <button class="btn-ghost" style="margin-top:8px">✎ Corregir ticket</button></div>`;
+    row.querySelector('.head').onclick=e=>{if(e.target.closest('.del'))return;row.classList.toggle('open');};
+    row.querySelector('.btn-ghost').onclick=()=>{closeSheet();draftImg=null;
+      openTicketReview({store:t.store,date:t.date,lines:t.lines.map(l=>({...l})),discount:t.discount,tax:t.tax,total:t.total},t.id);};
+    row.querySelector('.del').onclick=()=>{
+      if(!confirm('¿Eliminar este ticket de '+t.store+'?'))return;
+      state.tickets=state.tickets.filter(x=>x.id!==t.id);
+      addTomb(t.id);
+      const g=state.expenses.find(x=>x.id==='g-'+t.id);
+      if(g&&confirm('¿Eliminar también el gasto de '+fmtEUR(g.amount)+' asociado?')){
+        state.expenses=state.expenses.filter(x=>x.id!==g.id);addTomb(g.id);cloudOp({t:'dexp',id:g.id});
+      }
+      rebuildProducts();saveLocal();
+      cloudOp({t:'dtk',id:t.id});
+      pushProducts(null); // resubir productos recalculados
+      renderHist();renderAll();toast('Ticket eliminado');
+    };
+    box.appendChild(row);
+  });
+  document.getElementById('histMore').hidden=tks.length<=histShown;
+}
+
+/* ================= Estadísticas ================= */
+function computeStats(){
+  const s={n:state.tickets.length,total:0,byStore:{},byMonth:{},prods:state.products,ups:[]};
+  state.tickets.forEach(t=>{
+    s.total+=t.total;
+    s.byStore[t.store]=(s.byStore[t.store]||0)+t.total;
+    const m=String(t.date).slice(0,7);
+    if(m)s.byMonth[m]=(s.byMonth[m]||0)+t.total;
+  });
+  s.total=Math.round(s.total*100)/100;
+  state.products.forEach(p=>{
+    if(p.hist.length>=2){
+      const a=p.hist[0].unit,b=p.hist[p.hist.length-1].unit;
+      if(a>0&&b>a*1.03)s.ups.push({name:p.name,from:a,to:b,pct:Math.round((b/a-1)*100)});
+    }
+  });
+  s.ups.sort((a,b)=>b.pct-a.pct);
+  return s;
+}
+function statsForAI(){
+  const s=computeStats();
+  return {
+    tickets:s.n, gasto_total:s.total,
+    por_tienda:Object.fromEntries(Object.entries(s.byStore).map(([k,v])=>[k,Math.round(v*100)/100])),
+    por_mes:Object.fromEntries(Object.entries(s.byMonth).sort().map(([k,v])=>[k,Math.round(v*100)/100])),
+    gastos_por_apartado:Object.fromEntries(state.cats.map(c=>[c.name,Math.round(state.expenses.filter(e=>e.cat===c.id).reduce((a,e)=>a+e.amount,0)*100)/100]).filter(([,v])=>v>0)),
+    productos:s.prods.slice(0,120).map(p=>({nombre:p.name,cantidad:p.qty,gasto:p.spent,compras:p.buys,
+      precio_medio:p.qty?Math.round(p.spent/p.qty*100)/100:0,ultima_tienda:p.lastStore,
+      por_mes:p.hist.reduce((m,h)=>{const k=String(h.d).slice(0,7);m[k]=Math.round(((m[k]||0)+h.unit*h.qty)*100)/100;return m;},{})})),
+    subidas_de_precio:s.ups.slice(0,25)
+  };
+}
+
+/* ---- Sheet de análisis ---- */
+document.getElementById('anaBtn').onclick=()=>{
+  const s=computeStats();
+  const cheap=Object.entries(s.byStore).sort((a,b)=>a[1]-b[1]);
+  const g=document.getElementById('anaStats');
+  const top=s.prods[0];
+  g.innerHTML=`
+    <div class="stat"><small>Tickets</small><b>${s.n}</b> <span>${fmtEUR(s.total)}</span></div>
+    <div class="stat"><small>Producto top</small><b>${top?top.name:'—'}</b> <span>${top?fmtEUR(top.spent):''}</span></div>
+    <div class="stat"><small>Tiendas</small><b>${Object.keys(s.byStore).length}</b> <span>${cheap[0]?cheap[0][0]+' la más barata en total':''}</span></div>
+    <div class="stat"><small>Subidas de precio</small><b>${s.ups.length}</b> <span>${s.ups[0]?s.ups[0].name+' +'+s.ups[0].pct+'%':''}</span></div>`;
+  document.getElementById('anaOut').classList.remove('show');
+  openSheet('sheetAna');
+};
+async function runAnalysis(question){
+  const out=document.getElementById('anaOut');
+  if(!state.tickets.length&&!state.expenses.length){out.textContent='Aún no hay datos. Escanea algún ticket primero.';out.classList.add('show');return;}
+  out.textContent='Analizando…';out.classList.add('show');
+  try{
+    const datos=JSON.stringify(statsForAI());
+    const prompt=question
+      ?`Datos reales de mis compras y gastos del hogar (JSON):\n${datos}\n\nHoy es ${new Date().toISOString().slice(0,10)}. Responde en español, breve y con cifras exactas calculadas SOLO a partir de estos datos, a la pregunta: "${question}". Si los datos no bastan para responder, dilo claramente. Sin markdown ni asteriscos.`
+      :`Datos reales de mis compras y gastos del hogar (JSON):\n${datos}\n\nHoy es ${new Date().toISOString().slice(0,10)}. Genera en español un informe claro y conciso (máx. 300 palabras) con cifras exactas de estos datos: en qué productos gasto más; qué supermercado me sale más barato y por qué; productos que han subido de precio; comparativa y evolución entre meses; productos más y menos comprados; y 2-3 consejos concretos de ahorro. Usa títulos cortos en líneas separadas, sin asteriscos ni markdown.`;
+    out.textContent=await gemini([{text:prompt}],false);
+  }catch(e){out.textContent='No pude analizar: '+(e.message||'revisa tu API key de Gemini y tu conexión.');}
+}
+document.getElementById('anaRun').onclick=()=>runAnalysis(null);
+document.getElementById('anaAsk').onclick=()=>{const q=document.getElementById('anaQ').value.trim();if(q)runAnalysis(q);};
+document.getElementById('anaQ').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('anaAsk').click();});
+
+/* ================= PDF ================= */
+let pdfDoc=null;
+document.getElementById('pdfBtn').onclick=()=>{
+  if(!window.jspdf){toast('El generador PDF aún está cargando, prueba en un segundo');return;}
+  if(!state.tickets.length&&!state.expenses.length){toast('Aún no hay datos para el informe');return;}
+  try{pdfDoc=buildPDF();}catch(e){toast('Error creando el PDF');return;}
+  document.getElementById('pdfInfo').textContent=`Informe con ${state.tickets.length} tickets y ${state.products.length} productos fusionados.`;
+  openSheet('sheetPdf');
+};
+function buildPDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  const s=computeStats();
+  const gold=[176,138,60],ink=[35,30,50];
+  doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(...ink);
+  doc.text('Mi Casa · Informe de gastos',14,20);
+  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(120);
+  doc.text('Generado el '+new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}),14,27);
+
+  doc.autoTable({startY:34,head:[['Resumen general','']],
+    body:[['Número de tickets',String(s.n)],
+          ['Gasto total en tickets',eur(s.total)],
+          ['Gasto total registrado (todos los apartados)',eur(state.expenses.reduce((a,e)=>a+e.amount,0))],
+          ['Productos distintos',String(state.products.length)]],
+    theme:'grid',headStyles:{fillColor:gold},styles:{fontSize:10}});
+
+  const store=Object.entries(s.byStore).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,eur(v)]);
+  if(store.length)doc.autoTable({startY:doc.lastAutoTable.finalY+8,head:[['Supermercado / comercio','Gasto']],body:store,theme:'grid',headStyles:{fillColor:gold},styles:{fontSize:10}});
+
+  const catTot={};state.expenses.forEach(e=>catTot[e.cat]=(catTot[e.cat]||0)+e.amount);
+  const cats=state.cats.filter(c=>catTot[c.id]).map(c=>[c.name,eur(catTot[c.id])]);
+  if(cats.length)doc.autoTable({startY:doc.lastAutoTable.finalY+8,head:[['Apartado','Gasto']],body:cats,theme:'grid',headStyles:{fillColor:gold},styles:{fontSize:10}});
+
+  const months=Object.entries(s.byMonth).sort().map(([k,v])=>[new Date(k+'-15').toLocaleDateString('es-ES',{month:'long',year:'numeric'}),eur(v)]);
+  if(months.length)doc.autoTable({startY:doc.lastAutoTable.finalY+8,head:[['Mes','Gasto en tickets']],body:months,theme:'grid',headStyles:{fillColor:gold},styles:{fontSize:10}});
+
+  if(state.products.length){
+    doc.addPage();
+    doc.setFont('helvetica','bold');doc.setFontSize(15);doc.setTextColor(...ink);
+    doc.text('Resumen por productos (todos los tickets fusionados)',14,18);
+    doc.autoTable({startY:24,
+      head:[['Producto','Cant. total','Gasto total','€ medio/ud','Veces']],
+      body:state.products.map(p=>[p.name,String(p.qty),eur(p.spent),p.qty?eur(p.spent/p.qty):'—',String(p.buys)]),
+      theme:'striped',headStyles:{fillColor:gold},styles:{fontSize:8.5},
+      columnStyles:{0:{cellWidth:80}}});
+  }
+  const pages=doc.getNumberOfPages();
+  for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(150);
+    doc.text('Mi Casa · página '+i+' de '+pages,105,292,{align:'center'});}
+  return doc;
+}
+const eur=n=>(Math.round(n*100)/100).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const pdfName=()=>'gastos-casa-'+new Date().toISOString().slice(0,10)+'.pdf';
+document.getElementById('pdfDown').onclick=()=>{if(pdfDoc)pdfDoc.save(pdfName());};
+document.getElementById('pdfPrint').onclick=()=>{
+  if(!pdfDoc)return;
+  pdfDoc.autoPrint();
+  const url=pdfDoc.output('bloburl');
+  const w=window.open(url,'_blank');
+  if(!w)pdfDoc.save(pdfName());
+};
+document.getElementById('pdfShare').onclick=async()=>{
+  if(!pdfDoc)return;
+  try{
+    const file=new File([pdfDoc.output('blob')],pdfName(),{type:'application/pdf'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'Informe de gastos'});
+    }else{pdfDoc.save(pdfName());toast('Compartir no disponible: descargado');}
+  }catch(e){/* usuario canceló */}
 };
 
 /* ================= Utilidades ================= */
@@ -739,8 +1333,12 @@ function toast(msg){
 function renderAll(){
   document.getElementById('monthLabel').textContent=monthName(view);
   renderCats();renderChart();renderMovs();
+  document.getElementById('stTk').textContent=state.tickets.length;
+  document.getElementById('stTkTotal').textContent=fmtEUR(Math.round(state.tickets.reduce((a,t)=>a+t.total,0)*100)/100);
+  document.getElementById('stProds').textContent=state.products.length;
 }
 renderEmojis();
+rebuildProducts();
 renderAll();
 pullCloud();
 window.addEventListener('online',pullCloud);

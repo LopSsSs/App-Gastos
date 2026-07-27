@@ -63,3 +63,49 @@ La anon key es pública por diseño (va en cualquier web con Supabase), pero con
 política "acceso total" cualquiera que la tenga podría leer/escribir esas dos tablas.
 Para gastos domésticos es un riesgo asumible; no compartas la URL de tu app con la
 key puesta. Si algún día quieres blindarlo, se añade login de Supabase Auth.
+
+## 4. Tablas nuevas: Tickets y Productos (v3)
+
+Para el escáner de tickets y la base de datos de productos, ejecuta esto en el SQL Editor:
+
+```sql
+create table if not exists tickets_casa (
+  id text primary key,
+  comercio text,
+  fecha date,
+  total numeric(10,2) default 0,
+  descuento numeric(10,2) default 0,
+  iva numeric(10,2) default 0,
+  lineas jsonb not null default '[]',
+  creado timestamptz default now()
+);
+
+create table if not exists productos_casa (
+  id text primary key,
+  nombre text not null,
+  alias jsonb default '[]',
+  cantidad numeric default 0,
+  gasto numeric(10,2) default 0,
+  compras int default 0,
+  precio_medio numeric(10,4) default 0,
+  ultima_compra date,
+  ultima_tienda text,
+  historial jsonb default '[]',
+  actualizado timestamptz default now()
+);
+
+alter table tickets_casa enable row level security;
+alter table productos_casa enable row level security;
+
+drop policy if exists "acceso_total_tickets" on tickets_casa;
+create policy "acceso_total_tickets" on tickets_casa
+  for all using (true) with check (true);
+
+drop policy if exists "acceso_total_productos" on productos_casa;
+create policy "acceso_total_productos" on productos_casa
+  for all using (true) with check (true);
+```
+
+Nota: `productos_casa` es una copia consultable (para verla en Supabase o usarla
+desde otras apps). La fuente de verdad son los tickets: la app recalcula los
+acumulados a partir de ellos, así nunca se corrompen entre dispositivos.
