@@ -895,18 +895,74 @@ document.getElementById('settingsSave').onclick=async()=>{
 document.getElementById('prevMonth').onclick=()=>{view.setMonth(view.getMonth()-1);renderAll();};
 document.getElementById('nextMonth').onclick=()=>{view.setMonth(view.getMonth()+1);renderAll();};
 
-/* ================= Gemini (llamada común) ================= */
+/* ================= Gemini: cliente robusto =================
+   - Solo una petición de IA en vuelo a la vez (sin ráfagas que agoten el free tier)
+   - Ritmo mínimo entre llamadas: el free tier admite ~15 peticiones/minuto
+   - Errores 5xx: reintento con backoff exponencial (1s → 2s → 4s con jitter)
+   - 429 (cuota): respeta la espera que indica Google; si es corta reintenta solo,
+     si es larga (cuota diaria) prueba un modelo alternativo con cuota independiente */
+const GEMINI_MODELS=['gemini-2.0-flash','gemini-2.0-flash-lite'];
+const AI_MIN_INTERVAL=4500;    // ms mínimos entre llamadas
+const AI_MAX_TRIES=3;          // intentos por modelo
+const AI_RETRY_WAIT_MAX=15000; // espera máx. (ms) que aceptamos reintentar en un 429
+let _aiBusy=false,_aiLast=0;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+function quotaWaitMs(data){ // espera sugerida por Google en un 429, en ms
+  for(const d of (data?.error?.details||[]))
+    if(String(d['@type']||'').includes('RetryInfo')&&d.retryDelay)
+      return Math.ceil(parseFloat(d.retryDelay)*1000)||null;
+  const m=/retry in ([\d.]+)s/i.exec(data?.error?.message||'');
+  return m?Math.ceil(parseFloat(m[1])*1000):null;
+}
+const fmtWait=ms=>ms>=90000?Math.ceil(ms/60000)+' min':Math.ceil(ms/1000)+' s';
+
 async function gemini(parts,json=true){
   const key=localStorage.getItem('gemini_key');
   if(!key){openSheet('sheetSettings');toast('Primero pega tu API key de Gemini');throw new Error('sin-key');}
+  if(_aiBusy)throw new Error('Ya hay una consulta de IA en curso: espera a que termine');
+  _aiBusy=true;
+  try{return await geminiFetch(key,parts,json);}
+  finally{_aiBusy=false;}
+}
+async function geminiFetch(key,parts,json){
   const body={contents:[{parts}],generationConfig:{temperature:0}};
   if(json)body.generationConfig.response_mime_type='application/json';
-  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  const data=await r.json();
-  const txt=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('');
-  if(!txt)throw new Error(data?.error?.message||'Respuesta vacía de Gemini');
-  return txt;
+  const payload=JSON.stringify(body);
+  let quotaMsg='';
+  for(const model of GEMINI_MODELS){
+    for(let attempt=1;attempt<=AI_MAX_TRIES;attempt++){
+      const pace=_aiLast+AI_MIN_INTERVAL-Date.now();
+      if(pace>0)await sleep(pace);
+      _aiLast=Date.now();
+      let r,data;
+      try{
+        r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+          {method:'POST',headers:{'Content-Type':'application/json'},body:payload});
+        data=await r.json().catch(()=>null);
+      }catch(e){throw new Error('Sin conexión: revisa tu internet e inténtalo de nuevo');}
+      if(r.ok){
+        const txt=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('');
+        if(txt)return txt;
+        throw new Error('Gemini devolvió una respuesta vacía, inténtalo de nuevo');
+      }
+      if(r.status===429){
+        const wait=quotaWaitMs(data);
+        if(wait!==null&&wait<=AI_RETRY_WAIT_MAX&&attempt<AI_MAX_TRIES){await sleep(wait+250);continue;}
+        quotaMsg='Límite gratuito de IA agotado'+(wait?' · vuelve a probar en '+fmtWait(wait):'');
+        break; // cuota larga (p. ej. diaria): probar el siguiente modelo
+      }
+      if(r.status>=500){
+        if(attempt<AI_MAX_TRIES){await sleep(1000*2**(attempt-1)+Math.random()*400);continue;}
+        break; // servidor caído: probar el siguiente modelo
+      }
+      const msg=data?.error?.message||'';
+      throw new Error(/api[ _]?key/i.test(msg)
+        ?'La API key de Gemini no es válida: revísala en Ajustes'
+        :'Gemini: '+(msg||('error '+r.status)));
+    }
+  }
+  throw new Error(quotaMsg||'El servicio de IA no responde ahora mismo, prueba en un minuto');
 }
 /* Extraer JSON con llaves balanceadas (tolera texto alrededor o fences) */
 function extractJSON(s){
@@ -1054,9 +1110,13 @@ Reglas:
       discount:num(d.descuento),tax:num(d.iva),total:num(d.total)
     });
   }catch(e){
-    toast(e.message==='sin-key'?'Falta la API key de Gemini':'No pude leer el ticket: '+(e.message||'inténtalo con más luz'));
+    const m=e.message||'';
+    toast(m==='sin-key'?'Falta la API key de Gemini'
+      :/JSON/i.test(m)?'No pude interpretar el ticket: haz la foto más nítida y con más luz'
+      :m||'No pude leer el ticket, inténtalo de nuevo');
+  }finally{
+    btn.disabled=false;btn.textContent='📷 Escanear ticket';
   }
-  btn.disabled=false;btn.textContent='📷 Escanear ticket';
 };
 function imgToB64(file){
   return new Promise((res,rej)=>{
@@ -1236,9 +1296,14 @@ document.getElementById('anaBtn').onclick=()=>{
   document.getElementById('anaOut').classList.remove('show');
   openSheet('sheetAna');
 };
+let _anaBusy=false;
 async function runAnalysis(question){
+  if(_anaBusy)return; // evita dobles pulsaciones mientras la IA responde
   const out=document.getElementById('anaOut');
   if(!state.tickets.length&&!state.expenses.length){out.textContent='Aún no hay datos. Escanea algún ticket primero.';out.classList.add('show');return;}
+  const btnRun=document.getElementById('anaRun'),btnAsk=document.getElementById('anaAsk');
+  _anaBusy=true;btnRun.disabled=true;btnAsk.disabled=true;
+  btnRun.innerHTML='<span class="spinner"></span>Analizando…';
   out.textContent='Analizando…';out.classList.add('show');
   try{
     const datos=JSON.stringify(statsForAI());
@@ -1247,6 +1312,10 @@ async function runAnalysis(question){
       :`Datos reales de mis compras y gastos del hogar (JSON):\n${datos}\n\nHoy es ${new Date().toISOString().slice(0,10)}. Genera en español un informe claro y conciso (máx. 300 palabras) con cifras exactas de estos datos: en qué productos gasto más; qué supermercado me sale más barato y por qué; productos que han subido de precio; comparativa y evolución entre meses; productos más y menos comprados; y 2-3 consejos concretos de ahorro. Usa títulos cortos en líneas separadas, sin asteriscos ni markdown.`;
     out.textContent=await gemini([{text:prompt}],false);
   }catch(e){out.textContent='No pude analizar: '+(e.message||'revisa tu API key de Gemini y tu conexión.');}
+  finally{
+    _anaBusy=false;btnRun.disabled=false;btnAsk.disabled=false;
+    btnRun.textContent='✦ Generar informe con IA';
+  }
 }
 document.getElementById('anaRun').onclick=()=>runAnalysis(null);
 document.getElementById('anaAsk').onclick=()=>{const q=document.getElementById('anaQ').value.trim();if(q)runAnalysis(q);};
