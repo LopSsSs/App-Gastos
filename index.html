@@ -901,7 +901,7 @@ document.getElementById('nextMonth').onclick=()=>{view.setMonth(view.getMonth()+
    - Errores 5xx: reintento con backoff exponencial (1s → 2s → 4s con jitter)
    - 429 (cuota): respeta la espera que indica Google; si es corta reintenta solo,
      si es larga (cuota diaria) prueba un modelo alternativo con cuota independiente */
-const GEMINI_MODELS=['gemini-2.5-flash-lite','gemini-2.5-flash','gemini-2.0-flash'];
+const GEMINI_MODELS=['gemini-flash-lite-latest','gemini-flash-latest','gemini-2.5-flash','gemini-2.0-flash'];
 const AI_MIN_INTERVAL=4500;    // ms mínimos entre llamadas
 const AI_MAX_TRIES=3;          // intentos por modelo
 const AI_RETRY_WAIT_MAX=15000; // espera máx. (ms) que aceptamos reintentar en un 429
@@ -957,6 +957,10 @@ async function geminiFetch(key,parts,json){
         break; // servidor caído: probar el siguiente modelo
       }
       const msg=data?.error?.message||'';
+      if(r.status===404||/no longer available|not (available|found|supported)/i.test(msg)){
+        quotaMsg='Gemini: '+msg;
+        break; // modelo retirado o vetado para esta cuenta: probar el siguiente
+      }
       throw new Error(/api[ _]?key/i.test(msg)
         ?'La API key de Gemini no es válida: revísala en Ajustes'
         :'Gemini: '+(msg||('error '+r.status)));
