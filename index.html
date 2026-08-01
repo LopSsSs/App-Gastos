@@ -1202,7 +1202,8 @@ document.getElementById('tkSave').onclick=()=>{
   rebuildProducts();
   saveLocal();
   cloudOp({t:'itk',d:tkRow(t)});
-  pushProducts(t.id);
+  if(idx>=0)cloudOp({t:'dprodall'}); // al corregir un ticket pueden desaparecer productos: repoblar entera
+  pushProducts(idx>=0?null:t.id);
   if(document.getElementById('tkAsExpense').checked&&idx<0){
     const cat=document.getElementById('tkCat').value;
     const exp={id:'g-'+t.id,cat,amount:t.total,date:new Date(t.date+'T12:00:00').toISOString(),syn:false};
@@ -1245,6 +1246,7 @@ function renderHist(){
       }
       rebuildProducts();saveLocal();
       cloudOp({t:'dtk',id:t.id});
+      cloudOp({t:'dprodall'}); // vaciar productos_casa: los que ya no existan no deben quedar huérfanos
       pushProducts(null); // resubir productos recalculados
       renderHist();renderAll();toast('Ticket eliminado');
     };
