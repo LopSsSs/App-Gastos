@@ -26,6 +26,11 @@ existir estas dos (ambas marcadas como secretas):
 
 Si falta cualquiera de las dos, la función responde 500 y no deja pasar a nadie.
 
+> **Importante: no marques "Contains secret values" al crearlas.** Netlify no pasa el
+> valor de las variables secretas al runtime de las funciones: llegan con el nombre
+> puesto pero vacías, y la app da un 500 diciendo que faltan. Si una ya está creada
+> como secreta hay que **borrarla y crearla de nuevo**; editarla no quita esa marca.
+
 ## 2. Pegar el código en cada dispositivo
 
 Abre la app → botón ⚙ → **Nube (Neon)** → pega el mismo valor que pusiste en
