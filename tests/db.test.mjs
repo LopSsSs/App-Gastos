@@ -1,9 +1,9 @@
 /* Prueba la función /api/db contra la base real de Neon.
-   Uso:  DATABASE_URL=… APP_TOKEN=… node netlify/functions/db.test.mjs
+   Uso:  DATABASE_URL=… APP_TOKEN=… node tests/db.test.mjs
    Solo toca filas cuyo id empieza por "__test_", y las borra al terminar. */
 
 const TOKEN = process.env.APP_TOKEN;
-const { default: handler } = await import('./db.mjs');
+const { default: handler } = await import('../netlify/functions/db.mjs');
 
 let ok = 0, fallos = 0;
 

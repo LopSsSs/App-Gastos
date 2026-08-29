@@ -101,7 +101,7 @@ Se puede vaciar sin perder nada.
 Con las dos variables a mano:
 
 ```bash
-DATABASE_URL='postgresql://…' APP_TOKEN='…' node netlify/functions/db.test.mjs
+DATABASE_URL='postgresql://…' APP_TOKEN='…' node tests/db.test.mjs
 ```
 
 Ejercita las lecturas, el upsert, los borrados y las defensas (código incorrecto,
