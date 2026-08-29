@@ -396,16 +396,12 @@ select.sel-cat{
   <div class="grip"></div>
   <h2>Ajustes</h2>
 
-  <h4>☁ Nube (Supabase)</h4>
+  <h4>☁ Nube (Neon)</h4>
   <div class="field">
-    <label>URL del proyecto</label>
-    <input type="text" id="sbUrl" placeholder="https://xxxx.supabase.co" autocomplete="off">
+    <label>Código de acceso</label>
+    <input type="password" id="cloudToken" placeholder="Pega aquí tu código" autocomplete="off">
   </div>
-  <div class="field">
-    <label>Anon key (public)</label>
-    <input type="password" id="sbKey" placeholder="eyJhbGciOi…" autocomplete="off">
-  </div>
-  <p class="hint">Con esto tus gastos se guardan en la nube y los ves igual desde el móvil y el PC. Las instrucciones y el SQL para crear las tablas están en el README del ZIP. Si lo dejas vacío, la app funciona igual pero solo en este dispositivo.</p>
+  <p class="hint">Con esto tus gastos se guardan en la nube y los ves igual desde el móvil y el PC. Es el mismo código en todos tus dispositivos: el valor de APP_TOKEN en Netlify. Si lo dejas vacío, la app funciona igual pero solo en este dispositivo.</p>
 
   <h4>✦ IA (Gemini)</h4>
   <div class="field">
@@ -547,20 +543,22 @@ function totalsByCat(){
   const t={};expensesOfMonth().forEach(e=>{t[e.cat]=(t[e.cat]||0)+e.amount});return t;
 }
 
-/* ================= Supabase (REST) ================= */
+/* ================= Nube (Neon vía /api) =================
+   Los datos viven en Neon. La app no habla con la base de datos directamente:
+   llama a /api/db/<tabla>, una función serverless de Netlify que guarda la
+   contraseña en sus variables de entorno. Aquí solo viaja el código de acceso. */
 const cloudDot=document.getElementById('cloudDot');
-function sbConf(){
-  const url=(localStorage.getItem('sb_url')||'').replace(/\/+$/,'');
-  const key=localStorage.getItem('sb_key')||'';
-  return (url&&key)?{url,key}:null;
+function nubeConf(){
+  const token=(localStorage.getItem('cloud_token')||'').trim();
+  return token?{token}:null;
 }
-async function sb(path,opts={}){
-  const c=sbConf();if(!c)throw new Error('sin-config');
-  const r=await fetch(c.url+'/rest/v1/'+path,{
+async function api(path,opts={}){
+  const c=nubeConf();if(!c)throw new Error('sin-config');
+  const r=await fetch('/api/db/'+path,{
     ...opts,
     headers:{
-      'apikey':c.key,'Authorization':'Bearer '+c.key,
-      'Content-Type':'application/json','Prefer':'return=minimal',
+      'Authorization':'Bearer '+c.token,
+      'Content-Type':'application/json',
       ...(opts.headers||{})
     }
   });
@@ -590,18 +588,17 @@ function pruneTomb(){ // limpiar lápidas de más de 90 días
 function getPending(){try{return JSON.parse(localStorage.getItem('sb_pending'))||[]}catch(e){return[]}}
 function setPending(q){localStorage.setItem('sb_pending',JSON.stringify(q))}
 async function runOp(op){
-  const UP={'Prefer':'resolution=merge-duplicates'};
-  if(op.t==='iexp')return sb('gastos_casa',{method:'POST',headers:UP,body:JSON.stringify(op.d)});
-  if(op.t==='dexp')return sb('gastos_casa?id=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
-  if(op.t==='icat')return sb('apartados_casa',{method:'POST',headers:UP,body:JSON.stringify(op.d)});
+  if(op.t==='iexp')return api('gastos_casa',{method:'POST',body:JSON.stringify(op.d)});
+  if(op.t==='dexp')return api('gastos_casa?id=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
+  if(op.t==='icat')return api('apartados_casa',{method:'POST',body:JSON.stringify(op.d)});
   if(op.t==='dcat'){
-    await sb('gastos_casa?apartado=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
-    return sb('apartados_casa?id=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
+    await api('gastos_casa?apartado=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
+    return api('apartados_casa?id=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
   }
-  if(op.t==='itk')return sb('tickets_casa',{method:'POST',headers:UP,body:JSON.stringify(op.d)});
-  if(op.t==='dtk')return sb('tickets_casa?id=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
-  if(op.t==='uprod')return sb('productos_casa',{method:'POST',headers:UP,body:JSON.stringify(op.d)});
-  if(op.t==='dprodall')return sb('productos_casa?id=neq.__none__',{method:'DELETE'});
+  if(op.t==='itk')return api('tickets_casa',{method:'POST',body:JSON.stringify(op.d)});
+  if(op.t==='dtk')return api('tickets_casa?id=eq.'+encodeURIComponent(op.id),{method:'DELETE'});
+  if(op.t==='uprod')return api('productos_casa',{method:'POST',body:JSON.stringify(op.d)});
+  if(op.t==='dprodall')return api('productos_casa?id=neq.__none__',{method:'DELETE'});
 }
 let _flushP=null;
 function flushPending(){
@@ -623,7 +620,7 @@ function markAllSynced(){ // solo cuando la cola quedó vacía: todo lo local es
   if(ch)saveLocal();
 }
 function cloudOp(op){
-  if(!sbConf())return;
+  if(!nubeConf())return;
   const q=getPending();q.push(op);setPending(q); // primero a la cola (durable)
   flushPending().then(()=>{setCloud('on');markAllSynced();}).catch(()=>{
     setCloud('err');
@@ -639,15 +636,15 @@ function cloudOp(op){
       un gasto creado aquí y aún sin subir. Lo que vino de la nube alguna vez
       jamás se re-sube, así un borrado hecho en otro dispositivo no revive. */
 async function pullCloud(){
-  if(!sbConf()){setCloud('off');return;}
+  if(!nubeConf()){setCloud('off');return;}
   try{
     pruneTomb();
     await flushPending();
     const tomb=getTomb();
     const [cats,exps,tks]=await Promise.all([
-      sb('apartados_casa?select=*',{headers:{'Prefer':'return=representation'}}),
-      sb('gastos_casa?select=*&order=fecha.desc&limit=5000',{headers:{'Prefer':'return=representation'}}),
-      sb('tickets_casa?select=*&order=fecha.desc&limit=5000',{headers:{'Prefer':'return=representation'}}).catch(()=>[]) // tabla puede no existir aún
+      api('apartados_casa?select=*'),
+      api('gastos_casa?select=*&order=fecha.desc&limit=5000'),
+      api('tickets_casa?select=*&order=fecha.desc&limit=5000').catch(()=>[]) // tabla puede no existir aún
     ]);
     const cloudExps=(exps||[]).filter(e=>!tomb[String(e.id)])
       .map(e=>({id:String(e.id),cat:e.apartado,amount:Number(e.importe),date:e.fecha,syn:true}));
@@ -661,21 +658,21 @@ async function pullCloud(){
     const cloudIds=new Set(cloudExps.map(e=>e.id));
     const missingExps=state.expenses.filter(e=>e.syn!==true&&!cloudIds.has(String(e.id))&&!tomb[String(e.id)]);
     if(missingExps.length){
-      await sb('gastos_casa',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},
+      await api('gastos_casa',{method:'POST',
         body:JSON.stringify(missingExps.map(e=>({id:String(e.id),apartado:e.cat,importe:e.amount,fecha:e.date})))});
       missingExps.forEach(e=>{e.syn=true;cloudExps.push(e);});
     }
     const cloudTkIds=new Set(cloudTks.map(t=>t.id));
     const missingTks=state.tickets.filter(t=>t.syn!==true&&!cloudTkIds.has(String(t.id))&&!tomb[String(t.id)]);
     if(missingTks.length){
-      await sb('tickets_casa',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},
+      await api('tickets_casa',{method:'POST',
         body:JSON.stringify(missingTks.map(tkRow))}).catch(()=>{});
       missingTks.forEach(t=>{t.syn=true;cloudTks.push(t);});
     }
     const cloudCatIds=new Set(cloudCats.map(c=>c.id));
     const missingCats=state.cats.filter(c=>!DEFAULT_CATS.some(d=>d.id===c.id)&&!cloudCatIds.has(c.id));
     if(missingCats.length){
-      await sb('apartados_casa',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},
+      await api('apartados_casa',{method:'POST',
         body:JSON.stringify(missingCats.map(c=>({id:c.id,nombre:c.name,emoji:c.emoji,color:c.color})))});
       cloudCats.push(...missingCats);
     }
@@ -688,7 +685,7 @@ async function pullCloud(){
     rebuildProducts();
     saveLocal();
     setCloud('on');renderAll();
-  }catch(e){setCloud(sbConf()?'err':'off');}
+  }catch(e){setCloud(nubeConf()?'err':'off');}
 }
 const tkRow=t=>({id:String(t.id),comercio:t.store,fecha:t.date||null,total:t.total,
   descuento:t.discount||0,iva:t.tax||0,lineas:t.lines});
@@ -870,21 +867,19 @@ document.getElementById('catSave').onclick=()=>{
 
 /* ---- Ajustes ---- */
 document.getElementById('settingsBtn').onclick=()=>{
-  document.getElementById('sbUrl').value=localStorage.getItem('sb_url')||'';
-  document.getElementById('sbKey').value=localStorage.getItem('sb_key')||'';
+  document.getElementById('cloudToken').value=localStorage.getItem('cloud_token')||'';
   document.getElementById('apiKey').value=localStorage.getItem('gemini_key')||'';
   document.getElementById('syncStatus').textContent='';
   openSheet('sheetSettings');
 };
 document.getElementById('settingsSave').onclick=async()=>{
-  localStorage.setItem('sb_url',document.getElementById('sbUrl').value.trim());
-  localStorage.setItem('sb_key',document.getElementById('sbKey').value.trim());
+  localStorage.setItem('cloud_token',document.getElementById('cloudToken').value.trim());
   localStorage.setItem('gemini_key',document.getElementById('apiKey').value.trim());
   const st=document.getElementById('syncStatus');
-  if(sbConf()){
+  if(nubeConf()){
     st.textContent='Conectando con la nube…';
     await pullCloud();
-    st.textContent=cloudDot.classList.contains('on')?'✓ Nube conectada y sincronizada':'✕ No pude conectar: revisa URL, key y que las tablas existan';
+    st.textContent=cloudDot.classList.contains('on')?'✓ Nube conectada y sincronizada':'✕ No pude conectar: revisa el código de acceso';
     if(cloudDot.classList.contains('on')){setTimeout(closeSheet,900);toast('Nube conectada ✓');}
   }else{
     setCloud('off');closeSheet();toast('Guardado ✓');
@@ -987,7 +982,7 @@ const num=v=>{const n=parseFloat(String(v??'').replace(',','.'));return isFinite
 /* ================= Base de datos de productos =================
    Los productos se DERIVAN siempre de los tickets (fuente única de verdad):
    así nunca hay desajustes entre dispositivos ni acumulados corruptos.
-   La tabla productos_casa de Supabase se actualiza como copia consultable. */
+   La tabla productos_casa de Neon se actualiza como copia consultable. */
 const normName=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
   .replace(/[^a-z0-9ñ%,. ]/g,' ').replace(/\s+/g,' ').trim();
 function h36(s){let h=5381;for(let i=0;i<s.length;i++)h=(((h<<5)+h)+s.charCodeAt(i))>>>0;return h.toString(36);}
@@ -1067,8 +1062,8 @@ function rebuildProducts(){
   }
   state.products=list.sort((a,b)=>b.spent-a.spent);
 }
-function pushProducts(ticketId){ // sube a Supabase solo los productos tocados por ese ticket
-  if(!sbConf())return;
+function pushProducts(ticketId){ // sube a Neon solo los productos tocados por ese ticket
+  if(!nubeConf())return;
   const rows=state.products
     .filter(p=>!ticketId||p.hist.some(h=>h.tid===ticketId))
     .map(p=>({id:p.id,nombre:p.name,alias:p.aliases,cantidad:p.qty,gasto:p.spent,compras:p.buys,

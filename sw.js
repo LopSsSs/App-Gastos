@@ -1,4 +1,4 @@
-const CACHE = 'mi-casa-v4';
+const CACHE = 'mi-casa-v5';
 const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -15,8 +15,8 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = e.request.url;
-  // Nunca interceptar llamadas a APIs (Supabase, Gemini)
-  if (url.includes('generativelanguage') || url.includes('supabase')) return;
+  // Nunca interceptar llamadas a APIs (nuestra /api sobre Neon, Gemini)
+  if (url.includes('generativelanguage') || new URL(url).pathname.startsWith('/api/')) return;
 
   // HTML: red primero (para recibir actualizaciones de la app), caché si no hay conexión
   if (e.request.mode === 'navigate' || url.endsWith('.html')) {

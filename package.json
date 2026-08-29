@@ -1,0 +1,10 @@
+{
+  "name": "mi-casa-gastos",
+  "version": "3.0.0",
+  "private": true,
+  "description": "PWA de gastos del hogar con datos en Neon",
+  "type": "module",
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2"
+  }
+}

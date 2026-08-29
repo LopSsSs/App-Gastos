@@ -2,11 +2,14 @@
 
 App de control de gastos domésticos con gráfica interactiva, categorías personalizables y consejo mensual de ahorro con IA (Gemini).
 
-## Cómo subirla a Netlify (2 minutos)
+## Cómo se publica
 
-1. Entra en https://app.netlify.com
-2. Ve a "Sites" → arrastra **toda esta carpeta descomprimida** a la zona de "drag and drop" (o usa "Add new site → Deploy manually").
-3. Netlify te dará una URL tipo `https://loquesea.netlify.app`. Puedes cambiar el nombre en Site settings → Change site name (por ejemplo `micasa-gastos`).
+La app se despliega en Netlify desde el repositorio `LopSsSs/App-Gastos`: cada push a
+`main` publica la versión nueva sola.
+
+Ya no vale arrastrar la carpeta a Netlify: la app incluye una función serverless
+(`netlify/functions/db.mjs`) que Netlify tiene que construir, y necesita dos variables
+de entorno. Todo eso está explicado en **NEON.md**.
 
 ## Instalarla en el móvil como app
 
@@ -29,10 +32,17 @@ App de control de gastos domésticos con gráfica interactiva, categorías perso
 - Toca un apartado para ver/borrar sus movimientos; las categorías creadas por ti se pueden eliminar.
 - Botones con relieve (neumorfismo), paleta índigo/oro champán y aurora animada de fondo (respeta "reducir movimiento" del sistema).
 
-## Nube (opcional)
+## Nube
 
-Mira el archivo SUPABASE.md: con 3 pasos conectas la app a Supabase (gratis) y tus datos se sincronizan entre móvil y PC.
+Los datos viven en **Neon** (Postgres). La app no habla con la base de datos: llama a
+`/api/db`, una función que corre en Netlify y guarda ahí la contraseña. En cada
+dispositivo solo pegas un código de acceso (⚙ → Nube).
+
+Mira **NEON.md** para el detalle: variables de entorno, tablas y cómo probar la API.
 
 ## Nota sobre los datos
 
-Todo se guarda en localStorage del navegador/móvil. Si borras los datos del navegador, se pierden los gastos. Si más adelante quieres sincronización en la nube, se puede conectar a Supabase igual que tus otras apps.
+Cada gasto se guarda a la vez en el dispositivo (localStorage) y en la nube. Si no hay
+internet, se queda en una cola y sube solo al volver la conexión. Si borras los datos
+del navegador no pierdes nada mientras el código de acceso siga puesto: al abrir la app
+se recarga todo desde Neon.
