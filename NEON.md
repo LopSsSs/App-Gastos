@@ -24,7 +24,7 @@ existir estas dos (ambas marcadas como secretas):
 
 > Ninguna de las dos se guarda en este repositorio: es público.
 
-Si `APP_TOKEN` no existe, la función deja pasar a cualquiera. Debe estar siempre puesta.
+Si falta cualquiera de las dos, la función responde 500 y no deja pasar a nadie.
 
 ## 2. Pegar el código en cada dispositivo
 

@@ -11,7 +11,11 @@ import { neon } from '@neondatabase/serverless';
 
 export const config = { path: '/api/db/:tabla' };
 
-const sql = neon(process.env.DATABASE_URL);
+let _sql = null;
+function conexion() {
+  if (!process.env.DATABASE_URL) throw new Error('falta DATABASE_URL en Netlify');
+  return (_sql ??= neon(process.env.DATABASE_URL));
+}
 
 /* Solo estas tablas y estas columnas son alcanzables desde fuera. Los nombres
    de tabla y columna no se pueden parametrizar en SQL, así que la única
@@ -79,10 +83,9 @@ function construirLimite(params) {
 
 export default async (req, context) => {
   const esperado = process.env.APP_TOKEN;
-  if (esperado) {
-    const dado = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-    if (dado !== esperado) return error(401, 'código de acceso incorrecto');
-  }
+  if (!esperado) return error(500, 'falta APP_TOKEN en las variables de entorno de Netlify');
+  const dado = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  if (dado !== esperado) return error(401, 'código de acceso incorrecto');
 
   const tabla = context.params.tabla;
   const def = TABLAS[tabla];
@@ -95,7 +98,7 @@ export default async (req, context) => {
       const valores = [];
       const texto = `select * from "${tabla}"` + construirWhere(def, params, valores) +
                     construirOrden(def, params) + construirLimite(params);
-      const filas = await sql.query(texto, valores);
+      const filas = await conexion().query(texto, valores);
       return Response.json(filas);
     }
 
@@ -120,7 +123,7 @@ export default async (req, context) => {
         ` values ${tuplas.join(',')} on conflict ("id") do ` +
         (actualiza ? `update set ${actualiza}` : 'nothing');
 
-      await sql.query(texto, valores);
+      await conexion().query(texto, valores);
       return new Response(null, { status: 204 });
     }
 
@@ -128,12 +131,13 @@ export default async (req, context) => {
       const valores = [];
       const filtro = construirWhere(def, params, valores);
       if (!filtro) return error(400, 'un DELETE necesita al menos un filtro');
-      await sql.query(`delete from "${tabla}"` + filtro, valores);
+      await conexion().query(`delete from "${tabla}"` + filtro, valores);
       return new Response(null, { status: 204 });
     }
 
     return error(405, `método no soportado: ${req.method}`);
   } catch (e) {
-    return error(400, e.message || 'error de base de datos');
+    const msg = e.message || 'error de base de datos';
+    return error(msg.startsWith('falta ') ? 500 : 400, msg);
   }
 };
